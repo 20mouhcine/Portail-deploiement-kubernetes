@@ -8,9 +8,11 @@
   }
 </style>
 
-<main class="p-4 font-bold  main">
-  <app-rooms ></app-rooms>
-</main>
+@if (isHomePage()) {
+  <main class="p-4 font-bold main">
+    <a href="/apps">apps</a>
+  </main>
+}
 
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * The content above * * * * * * * * * * * * -->
@@ -19,6 +21,4 @@
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * End of Placeholder  * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-
-
 <router-outlet />
