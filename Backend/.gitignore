@@ -1,5 +1,10 @@
 HELP.md
 target/
+*.p12
+*.pfx
+*.jks
+*.pem
+*.key
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
