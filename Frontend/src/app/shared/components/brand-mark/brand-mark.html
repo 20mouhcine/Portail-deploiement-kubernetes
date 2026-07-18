@@ -1,0 +1,19 @@
+<div class="flex items-center gap-3" aria-label="KubePortal">
+  <span
+    class="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+    aria-hidden="true"
+  >
+    <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M12 2.75 19.5 7v8.5L12 19.75 4.5 15.5V7L12 2.75Z" />
+      <path d="m8.2 9.15 3.8-2.2 3.8 2.2v4.35L12 15.7l-3.8-2.2V9.15Z" />
+      <path d="M12 6.95V2.8M15.8 9.15l3.65-2.1M15.8 13.5l3.65 2.1M12 15.7v4.05M8.2 13.5l-3.65 2.1M8.2 9.15l-3.65-2.1" />
+    </svg>
+  </span>
+
+  @if (!compact()) {
+    <span class="leading-tight">
+      <span class="block text-base font-bold tracking-tight text-slate-950">KubePortal</span>
+      <span class="block text-xs font-medium text-slate-500">Déploiement interne</span>
+    </span>
+  }
+</div>

@@ -1,0 +1,66 @@
+<form class="space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  @if (errorMessage()) {
+    <div
+      class="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
+    >
+      <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-11a1 1 0 0 1 1 1v2.5a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1Zm0 7a1.1 1.1 0 1 1 0 2.2A1.1 1.1 0 0 1 10 14Z" clip-rule="evenodd" />
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <div>
+    <label for="username" class="mb-2 block text-sm font-semibold text-slate-700">
+      Nom d’utilisateur
+    </label>
+    <input
+      id="username"
+      type="text"
+      formControlName="username"
+      autocomplete="username"
+      placeholder="ex. oussama"
+      class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      [attr.aria-invalid]="form.controls.username.invalid && form.controls.username.touched"
+    />
+    @if (form.controls.username.invalid && form.controls.username.touched) {
+      <p class="mt-2 text-sm text-red-600">Le nom d’utilisateur est obligatoire.</p>
+    }
+  </div>
+
+  <div>
+    <div class="mb-2 flex items-center justify-between">
+      <label for="password" class="text-sm font-semibold text-slate-700">Mot de passe</label>
+      <span class="text-xs font-medium text-slate-400">Accès interne sécurisé</span>
+    </div>
+    <input
+      id="password"
+      type="password"
+      formControlName="password"
+      autocomplete="current-password"
+      placeholder="Votre mot de passe"
+      class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
+    />
+    @if (form.controls.password.invalid && form.controls.password.touched) {
+      <p class="mt-2 text-sm text-red-600">Le mot de passe est obligatoire.</p>
+    }
+  </div>
+
+  <button
+    type="submit"
+    class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+    [disabled]="loading()"
+  >
+    @if (loading()) {
+      <span class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+      Connexion en cours…
+    } @else {
+      Se connecter
+      <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 10h12M11.5 5.5 16 10l-4.5 4.5" />
+      </svg>
+    }
+  </button>
+</form>

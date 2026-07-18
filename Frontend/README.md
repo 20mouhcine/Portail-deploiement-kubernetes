@@ -1,59 +1,41 @@
-# Frontend
+# Frontend KubePortal
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
+Frontend Angular 21 et Tailwind CSS du portail interne de déploiement Kubernetes.
 
-## Development server
+## Démarrage local
 
-To start a local development server, run:
+Le backend Spring Boot doit répondre sur `http://localhost:8080`.
 
-```bash
-ng serve
+```powershell
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Ouvrir ensuite `http://localhost:4200`. Le proxy défini dans `proxy.conf.json`
+transmet automatiquement les appels `/api` au backend.
 
-## Code scaffolding
+## Organisation
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```text
+src/app/
+├── core/auth/
+│   ├── guards/          Protection des routes
+│   ├── models/          Contrats TypeScript de l'API
+│   └── services/        Session, login, logout et CSRF
+├── features/
+│   ├── auth/            Formulaire et page de connexion
+│   └── dashboard/       Première page protégée
+├── layout/              En-tête de l'application
+└── shared/components/   Composants visuels réutilisables
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+La session est conservée par Spring Boot dans un cookie `JSESSIONID` HttpOnly.
+Angular ne stocke aucun JWT. Le cookie `XSRF-TOKEN` et l'en-tête
+`X-XSRF-TOKEN` protègent les requêtes qui modifient l'état.
 
-```bash
-ng generate --help
+## Commandes de vérification
+
+```powershell
+npm test -- --watch=false
+npm run build
 ```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

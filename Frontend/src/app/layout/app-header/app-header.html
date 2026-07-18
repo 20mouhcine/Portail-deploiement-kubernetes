@@ -1,0 +1,34 @@
+<header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+  <div class="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 sm:px-8">
+    <div class="flex items-center gap-8">
+      <app-brand-mark />
+      <nav class="hidden items-center gap-1 md:flex" aria-label="Navigation principale">
+        <a class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900" href="/dashboard">Vue d’ensemble</a>
+        <span class="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-slate-400">Applications</span>
+        <span class="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-slate-400">Déploiements</span>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden text-right sm:block">
+        <p class="text-sm font-semibold text-slate-900">{{ user().username }}</p>
+        <div class="mt-1 flex justify-end gap-1">
+          @for (role of user().roles; track role) {
+            <app-role-badge [role]="role" />
+          }
+        </div>
+      </div>
+      <button
+        type="button"
+        class="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+        aria-label="Se déconnecter"
+        title="Se déconnecter"
+        (click)="logoutRequested.emit()"
+      >
+        <svg viewBox="0 0 20 20" class="size-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <path d="M7.5 3.5H5A1.5 1.5 0 0 0 3.5 5v10A1.5 1.5 0 0 0 5 16.5h2.5M12.5 6.5 16 10l-3.5 3.5M16 10H7" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
