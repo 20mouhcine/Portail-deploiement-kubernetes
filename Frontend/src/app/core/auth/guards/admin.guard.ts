@@ -4,14 +4,16 @@ import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 
-export const guestGuard: CanActivateFn = () => {
+export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
   return auth.initialize().pipe(
     map((authenticated) =>
-      authenticated ? router.parseUrl(auth.homeUrl()) : true,
+      authenticated && auth.hasRole('ADMIN')
+        ? true
+        : router.createUrlTree(['/dashboard']),
     ),
-    catchError(() => of(true)),
+    catchError(() => of(router.createUrlTree(['/login']))),
   );
 };

@@ -1,0 +1,26 @@
+<div class="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+  <header class="mb-8">
+    <p class="mb-2 text-sm font-semibold text-blue-600">Administration</p>
+    <h1 class="text-3xl font-bold tracking-tight text-slate-950">Créer un utilisateur</h1>
+    <p class="mt-2 max-w-2xl text-slate-500">Crée un accès au portail et attribue uniquement les rôles nécessaires.</p>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @if (createdUser(); as user) {
+    <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+      L’utilisateur <strong>{{ user.username }}</strong> a été créé avec succès.
+    </div>
+  }
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <app-user-registration-form [loading]="loading()" (registrationSubmitted)="register($event)" />
+  </section>
+
+  <aside class="mt-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-5 text-sm text-blue-900">
+    <p class="font-semibold">Bonnes pratiques</p>
+    <p class="mt-1 text-blue-800/80">Transmets le mot de passe temporaire par un canal sécurisé et n’accorde le rôle Admin qu’aux responsables autorisés.</p>
+  </aside>
+</div>

@@ -32,7 +32,7 @@ export class LoginPage {
         next: () => {
           const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
           void this.router.navigateByUrl(
-            returnUrl?.startsWith('/') ? returnUrl : '/dashboard',
+            returnUrl?.startsWith('/') ? returnUrl : this.auth.homeUrl(),
           );
         },
         error: (error: unknown) => {

@@ -1,13 +1,5 @@
 @if (user(); as currentUser) {
-  <div class="min-h-screen bg-slate-50">
-    <app-sidebar
-      [user]="currentUser"
-      [loggingOut]="loggingOut()"
-      (logoutRequested)="logout()"
-    />
-
-    <main class="min-h-screen pl-20 lg:pl-72">
-      <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
+  <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
       <section class="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
           <p class="mb-2 text-sm font-semibold text-blue-600">Vue d’ensemble</p>
@@ -69,7 +61,5 @@
           </dl>
         </aside>
       </section>
-      </div>
-    </main>
   </div>
 }

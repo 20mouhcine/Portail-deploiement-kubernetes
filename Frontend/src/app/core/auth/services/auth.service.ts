@@ -92,6 +92,10 @@ export class AuthService {
     return this.currentUser()?.roles.includes(role) ?? false;
   }
 
+  homeUrl(): string {
+    return this.hasRole('ADMIN') ? '/admin/dashboard' : '/dashboard';
+  }
+
   errorMessage(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
       return 'Une erreur inattendue est survenue.';

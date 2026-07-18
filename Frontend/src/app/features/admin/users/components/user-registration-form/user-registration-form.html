@@ -1,0 +1,69 @@
+<form class="space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div>
+      <label for="new-username" class="mb-2 block text-sm font-semibold text-slate-700">Nom d’utilisateur</label>
+      <input id="new-username" type="text" formControlName="username" autocomplete="off" placeholder="ex. sara.dev" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
+      @if (form.controls.username.invalid && form.controls.username.touched) {
+        <p class="mt-2 text-sm text-red-600">Entre 3 et 50 caractères : lettres, chiffres, point, tiret ou underscore.</p>
+      }
+    </div>
+
+    <div>
+      <label for="new-email" class="mb-2 block text-sm font-semibold text-slate-700">Adresse email</label>
+      <input id="new-email" type="email" formControlName="email" autocomplete="off" placeholder="sara@example.com" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="mt-2 text-sm text-red-600">Saisis une adresse email valide.</p>
+      }
+    </div>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div>
+      <label for="new-password" class="mb-2 block text-sm font-semibold text-slate-700">Mot de passe temporaire</label>
+      <input id="new-password" type="password" formControlName="password" autocomplete="new-password" placeholder="12 caractères minimum" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="mt-2 text-sm text-red-600">Le mot de passe doit contenir entre 12 et 128 caractères.</p>
+      }
+    </div>
+
+    <div>
+      <label for="password-confirmation" class="mb-2 block text-sm font-semibold text-slate-700">Confirmer le mot de passe</label>
+      <input id="password-confirmation" type="password" formControlName="passwordConfirmation" autocomplete="new-password" placeholder="Répète le mot de passe" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
+      @if (form.controls.passwordConfirmation.touched && form.controls.passwordConfirmation.hasError('mismatch')) {
+        <p class="mt-2 text-sm text-red-600">Les deux mots de passe ne correspondent pas.</p>
+      }
+    </div>
+  </div>
+
+  <fieldset>
+    <legend class="mb-3 text-sm font-semibold text-slate-700">Rôles</legend>
+    <div class="grid gap-3 sm:grid-cols-3">
+      <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/40">
+        <input type="checkbox" formControlName="developer" class="mt-0.5 size-4 accent-blue-600" />
+        <span><span class="block text-sm font-semibold text-slate-800">Developer</span><span class="mt-1 block text-xs text-slate-500">Consulte et prépare les applications.</span></span>
+      </label>
+      <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/40">
+        <input type="checkbox" formControlName="devops" class="mt-0.5 size-4 accent-blue-600" />
+        <span><span class="block text-sm font-semibold text-slate-800">DevOps</span><span class="mt-1 block text-xs text-slate-500">Gère les déploiements Kubernetes.</span></span>
+      </label>
+      <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/40">
+        <input type="checkbox" formControlName="admin" class="mt-0.5 size-4 accent-blue-600" />
+        <span><span class="block text-sm font-semibold text-slate-800">Admin</span><span class="mt-1 block text-xs text-slate-500">Gère les utilisateurs et les rôles.</span></span>
+      </label>
+    </div>
+    @if (form.hasError('roleRequired')) {
+      <p class="mt-2 text-sm text-red-600">Sélectionne au moins un rôle.</p>
+    }
+  </fieldset>
+
+  <div class="flex justify-end border-t border-slate-100 pt-5">
+    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="loading()">
+      @if (loading()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+        Création en cours…
+      } @else {
+        Créer l’utilisateur
+      }
+    </button>
+  </div>
+</form>
