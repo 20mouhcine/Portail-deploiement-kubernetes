@@ -24,7 +24,7 @@ export class ProjectsService {
     return response;
   }
 
-  delete(appId: number): Observable<void> {
+  delete(appId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${appId}`);
   }
 }

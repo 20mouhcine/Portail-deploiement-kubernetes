@@ -20,20 +20,35 @@
           </div>
           <p class="mt-2 text-slate-500">Gérez vos projets, leurs dépôts et leurs configurations de déploiement.</p>
         </div>
-        <button type="button" (click)="openModal()"
-          class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-          <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"
-            aria-hidden="true">
-            <path d="M10 3v14M3 10h14" />
-          </svg>
-          Nouveau projet
-        </button>
+        <div class="flex flex-wrap items-center gap-3">
+          @if (isAdmin()) {
+          <label class="relative block">
+            <span class="sr-only">Rechercher par projet ou créateur</span>
+            <svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+              viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="8.5" cy="8.5" r="5.5" />
+              <path d="m12.5 12.5 4 4" />
+            </svg>
+            <input type="search" (input)="searchProjects($event)"
+              placeholder="Projet ou créateur..."
+              class="w-64 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+          </label>
+          }
+          <button type="button" (click)="openModal()"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+            <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"
+              aria-hidden="true">
+              <path d="M10 3v14M3 10h14" />
+            </svg>
+            Nouveau projet
+          </button>
+        </div>
       </section>
 
       <!-- Project Cards Grid -->
-      @if (projects().length) {
+      @if (filteredProjects().length) {
       <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Liste des projets">
-        @for (project of projects(); track project.id) {
+        @for (project of filteredProjects(); track project.id) {
         <article
           class="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md">
           <div class="absolute right-4 top-4">
@@ -52,6 +67,12 @@
             </div>
             <div class="min-w-0 pr-6">
               <h3 class="truncate text-sm font-bold text-slate-900">{{ project.name }}</h3>
+              @if (isAdmin()) {
+              <p class="mt-1 truncate text-xs text-slate-400">
+                Créé par
+                <span class="font-semibold text-slate-600">{{ project.ownerUsername || 'Utilisateur inconnu' }}</span>
+              </p>
+              }
             </div>
           </div>
 
@@ -88,9 +109,14 @@
               <path d="m3.7 6.7 6.3 3.6 6.3-3.6M10 10.3v6.8" />
             </svg>
           </div>
-          <p class="mt-5 text-sm font-bold text-slate-800">Aucun projet</p>
-          <p class="mt-1.5 max-w-sm text-sm text-slate-400">Créez votre premier projet pour commencer à configurer vos
-            déploiements Kubernetes.</p>
+          <p class="mt-5 text-sm font-bold text-slate-800">
+            {{ projects().length ? 'Aucun résultat' : 'Aucun projet' }}
+          </p>
+          <p class="mt-1.5 max-w-sm text-sm text-slate-400">
+            {{ projects().length
+              ? 'Aucun projet ou créateur ne correspond à votre recherche.'
+              : 'Créez votre premier projet pour commencer à configurer vos déploiements Kubernetes.' }}
+          </p>
           <button type="button" (click)="openModal()"
             class="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700">
             <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"

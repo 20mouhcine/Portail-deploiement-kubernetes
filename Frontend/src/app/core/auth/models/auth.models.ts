@@ -1,7 +1,7 @@
 export type RoleName = 'ADMIN' | 'DEVOPS' | 'DEVELOPER';
 
 export interface CurrentUser {
-  readonly id: number;
+  readonly id: string;
   readonly username: string;
   readonly email: string;
   readonly enabled: boolean;

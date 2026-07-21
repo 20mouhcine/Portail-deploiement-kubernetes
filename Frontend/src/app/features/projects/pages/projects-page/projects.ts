@@ -26,6 +26,19 @@ export class Projects implements OnInit {
 
 
   protected readonly projects = signal<Project[]>([]);
+  protected readonly searchTerm = signal('');
+  protected readonly isAdmin = computed(() => this.user()?.roles.includes('ADMIN') ?? false);
+  protected readonly filteredProjects = computed(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase('fr');
+    if (!term) {
+      return this.projects();
+    }
+
+    return this.projects().filter((project) =>
+      project.name.toLocaleLowerCase('fr').includes(term)
+      || (project.ownerUsername ?? '').toLocaleLowerCase('fr').includes(term)
+    );
+  });
   protected readonly showForm = signal(false);
   protected readonly modalMode = signal<'create' | 'edit'>('create');
   protected readonly editingProject = signal<Project | null>(null);
@@ -40,7 +53,7 @@ export class Projects implements OnInit {
         name: project.name,
         description: project.description || '',
         repository: project.repository,
-        owner_id: project.owner_id
+        owner_id: project.ownerId ?? this.user()!.id
       };
     }
     return {
@@ -73,6 +86,10 @@ export class Projects implements OnInit {
   refresh() {
     this.service.loadProjects().subscribe(projects => this.projects.set(projects));
 
+  }
+
+  searchProjects(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
 
