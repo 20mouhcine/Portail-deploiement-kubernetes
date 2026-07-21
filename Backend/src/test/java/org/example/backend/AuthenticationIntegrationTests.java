@@ -1,10 +1,10 @@
 package org.example.backend;
 
-import org.example.backend.entity.Role;
-import org.example.backend.entity.User;
-import org.example.backend.enums.RoleName;
-import org.example.backend.repository.RoleRepository;
-import org.example.backend.repository.UserRepository;
+import org.example.auth.entity.Role;
+import org.example.auth.entity.User;
+import org.example.auth.enums.RoleName;
+import org.example.auth.repository.RoleRepository;
+import org.example.auth.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

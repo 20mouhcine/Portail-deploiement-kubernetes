@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { Applications } from './pages/applications/applications';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
 
@@ -23,13 +22,13 @@ export const routes: Routes = [
     title: 'Tableau de bord | KubePortal',
   },
   {
-    path: 'apps',
+    path: 'projects',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./pages/applications/applications').then(
-        (module) => module.Applications,
+      import('./features/projects/pages/projects-page/projects').then(
+        (module) => module.Projects,
       ),
-    title: 'Applications | KubePortal',
+    title: 'Projects | KubePortal',
   },
   {
     path: '',
