@@ -1,0 +1,111 @@
+@if (open()) {
+  <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <button
+      type="button"
+      class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+      aria-label="Fermer la fenêtre modale"
+      (click)="close()"
+    ></button>
+
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative w-full transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:max-w-lg">
+
+          <!-- Header -->
+          <div class="border-b border-slate-100 bg-white px-6 pb-4 pt-6">
+            <div class="flex items-center gap-3">
+              <div class="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                <svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                  <path d="m10 2.8 6.5 3.7v7L10 17.2l-6.5-3.7v-7L10 2.8Z" />
+                  <path d="m3.7 6.7 6.3 3.6 6.3-3.6M10 10.3v6.8" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900" id="modal-title">
+                  {{ mode() === 'edit' ? 'Modifier le' : 'Nouveau' }} projet
+                </h3>
+                <p class="mt-0.5 text-xs text-slate-400">Renseignez les informations du projet.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <form class="space-y-5 px-6 py-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <div>
+              <label for="project-name" class="block text-sm font-semibold text-slate-700">Nom</label>
+              <input
+                id="project-name"
+                type="text"
+                formControlName="name"
+                placeholder="Mon projet"
+                class="mt-2 block w-full rounded-xl border-0 px-4 py-2.5 text-sm shadow-sm ring-1 ring-inset transition focus:ring-2 focus:ring-inset focus:ring-blue-600"
+                [class.ring-red-300]="form.get('name')?.invalid && form.get('name')?.touched"
+                [class.text-red-900]="form.get('name')?.invalid && form.get('name')?.touched"
+                [class.ring-slate-200]="!(form.get('name')?.invalid && form.get('name')?.touched)"
+                [class.text-slate-900]="!(form.get('name')?.invalid && form.get('name')?.touched)"
+              />
+              @if (form.get('name')?.invalid && form.get('name')?.touched) {
+                <p class="mt-1 text-sm text-red-600">Le nom est requis.</p>
+              }
+            </div>
+
+            <div>
+              <label for="project-description" class="block text-sm font-semibold text-slate-700">Description</label>
+              <input
+                id="project-description"
+                type="text"
+                formControlName="description"
+                placeholder="Description courte du projet"
+                class="mt-2 block w-full rounded-xl border-0 px-4 py-2.5 text-sm shadow-sm ring-1 ring-inset transition focus:ring-2 focus:ring-inset focus:ring-blue-600"
+                [class.ring-red-300]="form.get('description')?.invalid && form.get('description')?.touched"
+                [class.text-red-900]="form.get('description')?.invalid && form.get('description')?.touched"
+                [class.ring-slate-200]="!(form.get('description')?.invalid && form.get('description')?.touched)"
+                [class.text-slate-900]="!(form.get('description')?.invalid && form.get('description')?.touched)"
+              />
+              @if (form.get('description')?.invalid && form.get('description')?.touched) {
+                <p class="mt-1 text-sm text-red-600">La description est requise.</p>
+              }
+            </div>
+
+            <div>
+              <label for="project-repository" class="block text-sm font-semibold text-slate-700">Repository</label>
+              <input
+                id="project-repository"
+                type="text"
+                formControlName="repository"
+                placeholder="https://github.com/user/repo"
+                class="mt-2 block w-full rounded-xl border-0 px-4 py-2.5 text-sm shadow-sm ring-1 ring-inset transition focus:ring-2 focus:ring-inset focus:ring-blue-600"
+                [class.ring-red-300]="form.get('repository')?.invalid && form.get('repository')?.touched"
+                [class.text-red-900]="form.get('repository')?.invalid && form.get('repository')?.touched"
+                [class.ring-slate-200]="!(form.get('repository')?.invalid && form.get('repository')?.touched)"
+                [class.text-slate-900]="!(form.get('repository')?.invalid && form.get('repository')?.touched)"
+              />
+              @if (form.get('repository')?.invalid && form.get('repository')?.touched) {
+                <p class="mt-1 text-sm text-red-600">Le repository est requis.</p>
+              }
+            </div>
+          </form>
+
+          <!-- Footer -->
+          <div class="flex flex-row-reverse gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+            <button
+              type="button"
+              (click)="submit()"
+              class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            >
+              Enregistrer
+            </button>
+            <button
+              type="button"
+              (click)="close()"
+              class="inline-flex items-center justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50"
+            >
+              Annuler
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-
 import { authGuard } from './core/auth/guards/auth.guard';
 import { adminGuard } from './core/auth/guards/admin.guard';
 import { guestGuard } from './core/auth/guards/guest.guard';
@@ -49,6 +48,14 @@ export const routes: Routes = [
             (module) => module.UserRegistrationPage,
           ),
         title: 'Créer un utilisateur | KubePortal',
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./features/projects/pages/projects-page/projects').then(
+            (module) => module.Projects,
+          ),
+        title: 'Projects | KubePortal',
       },
       {
         path: '',
