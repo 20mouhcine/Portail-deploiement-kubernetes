@@ -6,3 +6,11 @@ export interface CreateUserRequest {
   readonly password: string;
   readonly roles: readonly RoleName[];
 }
+
+export interface UpdateUserRolesRequest {
+  readonly roles: readonly RoleName[];
+}
+
+export interface UpdateUserStatusRequest {
+  readonly enabled: boolean;
+}

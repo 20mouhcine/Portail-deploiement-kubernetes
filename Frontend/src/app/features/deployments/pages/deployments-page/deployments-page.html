@@ -1,0 +1,39 @@
+<div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
+  <header class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+    <div><p class="mb-2 text-sm font-semibold text-blue-600">Kubernetes</p><h1 class="text-3xl font-bold tracking-tight text-slate-950">Déploiements</h1><p class="mt-2 max-w-2xl text-slate-500">Surveillez les environnements, les images et les ressources de vos applications.</p></div>
+    @if (canCreate()) { <button type="button" (click)="openCreate()" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 hover:bg-blue-700"><span class="text-lg leading-none">+</span>Nouveau déploiement</button> }
+  </header>
+
+  <div class="mt-6 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
+    <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">i</span>
+    <p><strong>Mode frontend :</strong> les données et actions sont simulées dans Angular. Docker, Kubernetes et le backend seront connectés plus tard.</p>
+  </div>
+
+  <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs">
+    <app-status-card label="Total" [value]="deployments().length.toString()" description="Déploiements enregistrés." tone="blue" />
+    <app-status-card label="Opérationnels" [value]="runningCount().toString()" description="Services disponibles ou en cours." tone="emerald" />
+    <app-status-card label="En échec" [value]="failedCount().toString()" description="Déploiements à examiner." tone="amber" />
+    <app-status-card label="Réplicas" [value]="totalReplicas().toString()" description="Instances demandées au cluster." tone="blue" />
+  </section>
+
+  <section class="mt-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <div><h2 class="font-bold text-slate-950">Tous les déploiements</h2><p class="mt-1 text-sm text-slate-500">{{ filteredDeployments().length }} résultat(s)</p></div>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <label class="relative"><span class="sr-only">Rechercher</span><svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m12.5 12.5 4 4"/></svg><input type="search" (input)="search($event)" placeholder="Nom, projet, namespace..." class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-64" /></label>
+      <select (change)="filterByStatus($event)" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"><option value="ALL">Tous les statuts</option><option value="RUNNING">En cours</option><option value="SUCCEEDED">Opérationnel</option><option value="PENDING">En attente</option><option value="FAILED">Échec</option><option value="STOPPED">Arrêté</option></select>
+    </div>
+  </section>
+
+  @if (filteredDeployments().length) {
+  <section class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    @for (deployment of filteredDeployments(); track deployment.id) {
+      <app-deployment-card [deployment]="deployment" [canManage]="canManage()" (editRequested)="openEdit($event)" (restartRequested)="restart($event)" (stopRequested)="stop($event)" (scaleRequested)="scale($event)" (deleteRequested)="askDelete($event)" />
+    }
+  </section>
+  } @else {
+  <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center"><p class="font-semibold text-slate-700">Aucun déploiement trouvé</p><p class="mt-1 text-sm text-slate-400">Modifiez votre recherche ou votre filtre.</p></section>
+  }
+</div>
+
+<app-deployment-form-modal [open]="formOpen()" [mode]="formMode()" [value]="formValue()" (closed)="closeForm()" (submitted)="save($event)" />
+<app-confirm-delete-modal [open]="deploymentToDelete() !== null" [title]="'Supprimer ' + (deploymentToDelete()?.name ?? 'le déploiement')" message="Cette action supprimera le déploiement de la liste de démonstration." (confirm)="confirmDelete()" (cancel)="cancelDelete()" />

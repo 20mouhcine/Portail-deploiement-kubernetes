@@ -3,7 +3,11 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { CurrentUser } from '../../auth/models/auth.models';
-import { CreateUserRequest } from '../models/admin-user.models';
+import {
+  CreateUserRequest,
+  UpdateUserRolesRequest,
+  UpdateUserStatusRequest,
+} from '../models/admin-user.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminUserService {
@@ -15,5 +19,13 @@ export class AdminUserService {
 
   getUsers(): Observable<readonly CurrentUser[]> {
     return this.http.get<readonly CurrentUser[]>('/api/admin/users');
+  }
+
+  updateRoles(userId: string, request: UpdateUserRolesRequest): Observable<CurrentUser> {
+    return this.http.put<CurrentUser>(`/api/admin/users/${userId}/roles`, request);
+  }
+
+  setEnabled(userId: string, request: UpdateUserStatusRequest): Observable<CurrentUser> {
+    return this.http.patch<CurrentUser>(`/api/admin/users/${userId}/enabled`, request);
   }
 }

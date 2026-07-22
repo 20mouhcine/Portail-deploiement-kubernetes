@@ -8,6 +8,7 @@ import org.example.Projects.DTO.UpdateProjectRequest;
 import org.example.Projects.Service.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public class ProjectController {
     }
 
     @PostMapping
+    @PreAuthorize("!hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ProjectResponse>> createApplication(
              @RequestBody CreateProjectRequest request
     ) {

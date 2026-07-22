@@ -47,7 +47,7 @@ export const routes: Routes = [
           import('./features/admin/users/pages/user-registration-page/user-registration-page').then(
             (module) => module.UserRegistrationPage,
           ),
-        title: 'Créer un utilisateur | KubePortal',
+        title: 'Gestion des utilisateurs | KubePortal',
       },
       {
         path: 'projects',
@@ -56,6 +56,14 @@ export const routes: Routes = [
             (module) => module.Projects,
           ),
         title: 'Projects | KubePortal',
+      },
+      {
+        path: 'deployments',
+        loadComponent: () =>
+          import('./features/deployments/pages/deployments-page/deployments-page').then(
+            (module) => module.DeploymentsPage,
+          ),
+        title: 'Déploiements | KubePortal',
       },
       {
         path: '',

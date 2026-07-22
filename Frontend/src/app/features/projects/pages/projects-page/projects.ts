@@ -27,6 +27,7 @@ export class Projects implements OnInit {
 
   protected readonly projects = signal<Project[]>([]);
   protected readonly searchTerm = signal('');
+  protected readonly viewMode = signal<'cards' | 'list'>('cards');
   protected readonly isAdmin = computed(() => this.user()?.roles.includes('ADMIN') ?? false);
   protected readonly filteredProjects = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('fr');
@@ -90,6 +91,10 @@ export class Projects implements OnInit {
 
   searchProjects(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  setViewMode(mode: 'cards' | 'list'): void {
+    this.viewMode.set(mode);
   }
 
 

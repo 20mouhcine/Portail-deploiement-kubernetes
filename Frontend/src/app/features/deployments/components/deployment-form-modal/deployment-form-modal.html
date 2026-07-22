@@ -1,0 +1,21 @@
+@if (open()) {
+<div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/55 p-4" (click)="close()">
+  <section class="my-6 w-full max-w-2xl rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+      <div><p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Kubernetes</p><h2 class="mt-1 text-xl font-bold text-slate-950">{{ mode() === 'create' ? 'Nouveau déploiement' : 'Modifier le déploiement' }}</h2><p class="mt-1 text-sm text-slate-500">Configurez l'image et les ressources du conteneur.</p></div>
+      <button type="button" (click)="close()" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer">✕</button>
+    </header>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="grid gap-5 px-6 py-5 sm:grid-cols-2">
+      <label class="text-sm font-semibold text-slate-700">Projet<input formControlName="projectName" placeholder="Portail Kubernetes" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Nom du déploiement<input formControlName="name" placeholder="backend-api" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Namespace<input formControlName="namespace" placeholder="production" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Image Docker<input formControlName="image" placeholder="organisation/application:1.0.0" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Réplicas<input type="number" formControlName="replicas" min="1" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Port<input type="number" formControlName="port" min="1" max="65535" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">CPU<input formControlName="cpu" placeholder="250m" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+      <label class="text-sm font-semibold text-slate-700">Mémoire<input formControlName="memory" placeholder="256Mi" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+    </form>
+    <footer class="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4"><button type="button" (click)="close()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button><button type="button" (click)="submit()" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 hover:bg-blue-700">Enregistrer</button></footer>
+  </section>
+</div>
+}

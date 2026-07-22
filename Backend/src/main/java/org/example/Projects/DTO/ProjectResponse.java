@@ -17,6 +17,10 @@ public class ProjectResponse {
 
     private UUID id;
 
+    private UUID ownerId;
+
+    private String ownerUsername;
+
     private String name;
 
     private String description;
@@ -27,6 +31,8 @@ public class ProjectResponse {
     public static ProjectResponse from(Project project) {
         return new ProjectResponse(
                 project.getId(),
+                project.getOwner() != null ? project.getOwner().getId() : null,
+                project.getOwner() != null ? project.getOwner().getUsername() : null,
                 project.getName(),
                 project.getDescription(),
                 project.getRepository()

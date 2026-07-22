@@ -1,8 +1,8 @@
 <div class="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
   <header class="mb-8">
     <p class="mb-2 text-sm font-semibold text-blue-600">Administration</p>
-    <h1 class="text-3xl font-bold tracking-tight text-slate-950">Créer un utilisateur</h1>
-    <p class="mt-2 max-w-2xl text-slate-500">Crée un accès au portail et attribue uniquement les rôles nécessaires.</p>
+    <h1 class="text-3xl font-bold tracking-tight text-slate-950">Gestion des utilisateurs</h1>
+    <p class="mt-2 max-w-2xl text-slate-500">Créez les accès, attribuez les rôles et gérez les comptes existants.</p>
   </header>
 
   @if (errorMessage()) {
@@ -23,4 +23,19 @@
     <p class="font-semibold">Bonnes pratiques</p>
     <p class="mt-1 text-blue-800/80">Transmets le mot de passe temporaire par un canal sécurisé et n’accorde le rôle Admin qu’aux responsables autorisés.</p>
   </aside>
+
+  @if (managementError()) {
+    <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ managementError() }}</div>
+  }
+
+  @if (usersLoading()) {
+    <div class="mt-10 rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">Chargement des utilisateurs…</div>
+  } @else {
+    <app-user-management-list
+      [users]="users()"
+      [currentUserId]="currentUser()?.id ?? null"
+      [loadingUserId]="loadingUserId()"
+      (rolesChanged)="updateRoles($event)"
+      (statusChanged)="toggleStatus($event)" />
+  }
 </div>
