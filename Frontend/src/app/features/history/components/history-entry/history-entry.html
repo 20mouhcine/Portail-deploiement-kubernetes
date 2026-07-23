@@ -1,0 +1,17 @@
+<article class="relative grid grid-cols-[2.5rem_1fr] gap-4 pb-6">
+  @if (!last()) { <span class="absolute bottom-0 left-5 top-10 w-px bg-slate-200"></span> }
+  <div class="relative z-10 grid size-10 place-items-center rounded-xl" [class]="iconClasses()">
+    <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5.5V2.8M3 5.5h2.7M3.2 5.3A7 7 0 1 1 3 13"/><path d="M10 6v4l2.7 1.6"/></svg>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div><div class="flex flex-wrap items-center gap-2"><h2 class="font-bold text-slate-900">{{ entry().targetName }}</h2><app-action-type-badge [action]="entry().action" /></div><p class="mt-2 text-sm leading-relaxed text-slate-600">{{ entry().details }}</p></div>
+      <time class="shrink-0 text-xs font-medium text-slate-400">{{ entry().createdAt | date:'dd/MM/yyyy à HH:mm' }}</time>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <span>Utilisateur : <strong class="text-slate-700">{{ entry().username }}</strong></span>
+      <span>Type : <strong class="text-slate-700">{{ entry().targetType }}</strong></span>
+      <span>IP : <strong class="font-mono text-slate-700">{{ entry().ipAddress }}</strong></span>
+    </div>
+  </div>
+</article>
