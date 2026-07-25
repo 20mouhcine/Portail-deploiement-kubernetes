@@ -144,6 +144,7 @@ class DeploymentIntegrationTests {
     @Test
     void adminCanStopDeployment() throws Exception {
         User devops = createUser("devops", RoleName.DEVOPS);
+        createUser("admin", RoleName.ADMIN);
         Project project = createProject("Portail Kubernetes", devops);
         Deployment deployment = createDeployment(project, devops);
 

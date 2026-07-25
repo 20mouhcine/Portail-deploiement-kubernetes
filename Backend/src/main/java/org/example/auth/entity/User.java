@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.History.Entity.ActionHistory;
 import org.example.Projects.Entity.Project;
 
 import java.time.LocalDateTime;
@@ -73,6 +74,10 @@ public class User {
 
     @OneToMany(mappedBy = "owner")
     private Set<Project> projects = new HashSet<>();
+
+    @Setter(AccessLevel.NONE)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private Set<ActionHistory> actionHistory = new HashSet<>();
 
     public User(String username, String email, String passwordHash) {
         this.username = username;

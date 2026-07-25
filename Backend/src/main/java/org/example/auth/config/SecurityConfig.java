@@ -2,6 +2,9 @@ package org.example.auth.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.History.Enums.ActionType;
+import org.example.History.Enums.TargetType;
+import org.example.History.Service.IActionHistoryService;
 import org.example.auth.service.UserService;
 import org.example.auth.service.LoginAttemptService;
 import org.example.auth.security.LoginRateLimitFilter;
@@ -55,6 +58,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             UserService userService,
+            IActionHistoryService historyService,
             LoginAttemptService loginAttemptService,
             LoginRateLimitFilter loginRateLimitFilter,
             CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
@@ -82,6 +86,14 @@ public class SecurityConfig {
                                     request.getRemoteAddr()
                             );
                             userService.recordSuccessfulLogin(authentication.getName());
+                            historyService.record(
+                                    ActionType.LOGIN,
+                                    "Connexion réussie au portail",
+                                    TargetType.SESSION,
+                                    "Session utilisateur",
+                                    authentication.getName(),
+                                    request.getRemoteAddr()
+                            );
                             writeJson(response, HttpServletResponse.SC_OK, Map.of(
                                     "message", "Connexion réussie",
                                     "username", authentication.getName()
@@ -103,11 +115,21 @@ public class SecurityConfig {
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
-                        .logoutSuccessHandler((request, response, authentication) ->
-                                writeJson(response, HttpServletResponse.SC_OK, Map.of(
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            if (authentication != null) {
+                                historyService.record(
+                                        ActionType.LOGOUT,
+                                        "Déconnexion du portail",
+                                        TargetType.SESSION,
+                                        "Session utilisateur",
+                                        authentication.getName(),
+                                        request.getRemoteAddr()
+                                );
+                            }
+                            writeJson(response, HttpServletResponse.SC_OK, Map.of(
                                         "message", "Déconnexion réussie"
-                                ))
-                        )
+                            ));
+                        })
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->

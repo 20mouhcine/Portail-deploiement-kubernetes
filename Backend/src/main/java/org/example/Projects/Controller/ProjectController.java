@@ -1,14 +1,20 @@
 package org.example.Projects.Controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import org.example.History.Enums.ActionType;
+import org.example.History.Enums.TargetType;
+import org.example.History.Service.IActionHistoryService;
 import org.example.Projects.DTO.ApiResponse;
 import org.example.Projects.DTO.ProjectResponse;
 import org.example.Projects.DTO.CreateProjectRequest;
 import org.example.Projects.DTO.UpdateProjectRequest;
+import org.example.Projects.Entity.Project;
 import org.example.Projects.Service.ProjectService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +30,7 @@ import java.util.logging.Logger;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final IActionHistoryService historyService;
 
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> getApplications() {
@@ -35,11 +42,14 @@ public class ProjectController {
     @PostMapping
     @PreAuthorize("!hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ProjectResponse>> createApplication(
-             @RequestBody CreateProjectRequest request
+             @RequestBody CreateProjectRequest request,
+             Authentication authentication,
+             HttpServletRequest httpRequest
     ) {
 
         ProjectResponse response =
                 projectService.createApplication(request);
+        record(ActionType.CREATE, "Création du projet", response.getName(), authentication, httpRequest);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -48,23 +58,50 @@ public class ProjectController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateApplication(
             @PathVariable UUID id,
-             @RequestBody UpdateProjectRequest request
+             @RequestBody UpdateProjectRequest request,
+             Authentication authentication,
+             HttpServletRequest httpRequest
     ) {
+
+        ProjectResponse response = projectService.update(id,request);
+        record(ActionType.UPDATE, "Modification du projet", response.getName(), authentication, httpRequest);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Application updated successfully.",
-                        projectService.update(id,request)
+                        response
                 )
         );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteApplication(
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            Authentication authentication,
+            HttpServletRequest httpRequest
     ) {
-    projectService.deleteApplicationById(id);
-    return ResponseEntity.ok(ApiResponse.success("Application deleted successfully.", null));
+        Project project = projectService.getApplicationById(id);
+        String projectName = project == null ? id.toString() : project.getName();
+        projectService.deleteApplicationById(id);
+        record(ActionType.DELETE, "Suppression du projet", projectName, authentication, httpRequest);
+        return ResponseEntity.ok(ApiResponse.success("Application deleted successfully.", null));
+    }
+
+    private void record(
+            ActionType action,
+            String details,
+            String projectName,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        historyService.record(
+                action,
+                details,
+                TargetType.PROJECT,
+                projectName,
+                authentication.getName(),
+                request.getRemoteAddr()
+        );
     }
 
 }
