@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -43,4 +45,25 @@ public class UpdateDeploymentRequest {
     @NotBlank(message = "La mémoire est obligatoire")
     @Size(max = 20, message = "La mémoire ne doit pas dépasser 20 caractères")
     private String memory;
+
+    private Map<String, String> envVariables;
+
+    private Map<String, String> secretVariables;
+
+    private String gitRepository;
+
+    private String gitBranch;
+
+    private String gitCommit;
+
+    private String gitTag;
+
+    private String requestedHostname;
+
+    private String requestedPath;
+
+    private Boolean tlsEnabled;
+
+    private String tlsSecretName;
+
 }

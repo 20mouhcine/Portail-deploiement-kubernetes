@@ -1,14 +1,14 @@
-package org.example.auth.config;
+package org.example.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.History.Enums.ActionType;
 import org.example.History.Enums.TargetType;
 import org.example.History.Service.IActionHistoryService;
-import org.example.auth.service.UserService;
-import org.example.auth.service.LoginAttemptService;
 import org.example.auth.security.LoginRateLimitFilter;
 import org.example.auth.security.SpaCsrfTokenRequestHandler;
+import org.example.auth.service.LoginAttemptService;
+import org.example.auth.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,13 +26,13 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableMethodSecurity

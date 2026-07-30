@@ -1,0 +1,27 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()" [@modalAnimation]>
+    <div class="modal-header">
+      <div class="header-title">
+        <h3>Deployment Logs</h3>
+        <span class="deployment-name">{{ deploymentName }}</span>
+      </div>
+      <button class="close-button" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="logs-container" #logsContainer (scroll)="onScroll()">
+        @if (logs().length === 0) {
+          <div class="empty-logs">Waiting for logs...</div>
+        }
+        @for (log of logs(); track log.id) {
+          <div class="log-line" [ngClass]="log.level.toLowerCase()">
+            <span class="log-timestamp">{{ log.timestamp | date:'HH:mm:ss.SSS' }}</span>
+            <span class="log-icon">{{ getIconForLevel(log.level) }}</span>
+            <span class="log-source">[{{ log.source }}]</span>
+            <span class="log-message">{{ log.message }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

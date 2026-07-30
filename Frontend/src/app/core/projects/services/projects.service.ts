@@ -12,6 +12,7 @@ export class ProjectsService {
 
   loadProjects(): Observable<Project[]> {
 
+
     return this.http.get<Project[]>(this.apiUrl);
   }
 

@@ -6,47 +6,59 @@
     <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
 
       <!-- Header Section -->
-      <section class="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <section
+        class="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p class="mb-2 text-sm font-semibold text-blue-600">Gestion</p>
-          <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold tracking-tight text-slate-950">Projets</h1>
+          <div class="flex items-center gap-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Gestion</p>
+          </div>
+          <div class="mt-1 flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-950">Projets</h1>
             @if (projects().length) {
             <span
-              class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-600/10">
+              class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10">
               {{ projects().length }}
             </span>
             }
           </div>
-          <p class="mt-2 text-slate-500">Gérez vos projets, leurs dépôts et leurs configurations de déploiement.</p>
+          <p class="mt-1 text-sm text-slate-500">Gérez vos projets, leurs dépôts et leurs configurations de déploiement.
+          </p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
-          @if (isAdmin()) {
-          <label class="relative block">
+        <div class="flex flex-nowrap items-center gap-2.5 overflow-x-auto sm:overflow-visible">
+          <label class="relative block min-w-0 flex-1 sm:flex-none">
             <span class="sr-only">Rechercher par projet ou créateur</span>
-            <svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+            <svg class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
               viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
               <circle cx="8.5" cy="8.5" r="5.5" />
               <path d="m12.5 12.5 4 4" />
             </svg>
-            <input type="search" (input)="searchProjects($event)"
-              placeholder="Projet ou créateur..."
-              class="w-64 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+            <input type="search" (input)="searchProjects($event)" placeholder="Projet ou créateur..."
+              class="w-full sm:w-56 rounded-md border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
           </label>
-          <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm" aria-label="Mode d'affichage">
+
+          <div class="inline-flex shrink-0 rounded-md border border-slate-200 bg-white p-0.5"
+            aria-label="Mode d'affichage">
             <button type="button" (click)="setViewMode('cards')"
-              [class]="viewMode() === 'cards' ? 'rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
-              Cartes
+              [class]="viewMode() === 'cards' ? 'rounded px-2.5 py-1.5 bg-blue-600 text-white' : 'rounded px-2.5 py-1.5 text-slate-500 hover:bg-slate-100'">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-3.5 w-3.5">
+                <rect x="96" y="96" width="192" height="192" rx="32" fill="currentColor" />
+                <rect x="352" y="96" width="192" height="192" rx="32" fill="currentColor" />
+                <rect x="96" y="352" width="192" height="192" rx="32" fill="currentColor" />
+                <rect x="352" y="352" width="192" height="192" rx="32" fill="currentColor" />
+              </svg>
             </button>
             <button type="button" (click)="setViewMode('list')"
-              [class]="viewMode() === 'list' ? 'rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
-              Liste
+              [class]="viewMode() === 'list' ? 'rounded px-2.5 py-1.5 bg-blue-600 text-white' : 'rounded px-2.5 py-1.5 text-slate-500 hover:bg-slate-100'">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-3.5 w-3.5">
+                <path fill="currentColor"
+                  d="M104 112C90.7 112 80 122.7 80 136L80 184C80 197.3 90.7 208 104 208L152 208C165.3 208 176 197.3 176 184L176 136C176 122.7 165.3 112 152 112L104 112zM256 128C238.3 128 224 142.3 224 160C224 177.7 238.3 192 256 192L544 192C561.7 192 576 177.7 576 160C576 142.3 561.7 128 544 128L256 128zM256 288C238.3 288 224 302.3 224 320C224 337.7 238.3 352 256 352L544 352C561.7 352 576 337.7 576 320C576 302.3 561.7 288 544 288L256 288zM256 448C238.3 448 224 462.3 224 480C224 497.7 238.3 512 256 512L544 512C561.7 512 576 497.7 576 480C576 462.3 561.7 448 544 448L256 448zM80 296L80 344C80 357.3 90.7 368 104 368L152 368C165.3 368 176 357.3 176 344L176 296C176 282.7 165.3 272 152 272L104 272C90.7 282.7 80 282.7 80 296zM104 432C90.7 432 80 442.7 80 456L80 504C80 517.3 90.7 528 104 528L152 528C165.3 528 176 517.3 176 504L176 456C176 442.7 165.3 432 152 432L104 432z" />
+              </svg>
             </button>
           </div>
-          }
-          @if (!isAdmin()) {
+
+          @if (hasAccess()) {
           <button type="button" (click)="openModal()"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+            class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
             <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"
               aria-hidden="true">
               <path d="M10 3v14M3 10h14" />
@@ -59,7 +71,7 @@
 
       <!-- Project Cards Grid -->
       @if (filteredProjects().length) {
-      @if (viewMode() === 'cards' || !isAdmin()) {
+      @if (viewMode() === 'cards' || !hasAccess()) {
       <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Liste des projets">
         @for (project of filteredProjects(); track project.id) {
         <article
@@ -80,7 +92,7 @@
             </div>
             <div class="min-w-0 pr-6">
               <h3 class="truncate text-sm font-bold text-slate-900">{{ project.name }}</h3>
-              @if (isAdmin()) {
+              @if (hasAccess()) {
               <p class="mt-1 truncate text-xs text-slate-400">
                 Créé par
                 <span class="font-semibold text-slate-600">{{ project.ownerUsername || 'Utilisateur inconnu' }}</span>
@@ -110,7 +122,8 @@
         }
       </section>
       } @else {
-      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-label="Liste des projets">
+      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        aria-label="Liste des projets">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -126,12 +139,17 @@
               <tr class="transition hover:bg-slate-50/70">
                 <td class="px-5 py-4">
                   <p class="font-semibold text-slate-900">{{ project.name }}</p>
-                  <p class="mt-1 max-w-sm truncate text-xs text-slate-500">{{ project.description || 'Aucune description' }}</p>
+                  <p class="mt-1 max-w-sm truncate text-xs text-slate-500">{{ project.description || 'Aucune
+                    description' }}</p>
                 </td>
                 <td class="px-5 py-4 text-slate-600">{{ project.ownerUsername || 'Utilisateur inconnu' }}</td>
-                <td class="px-5 py-4"><span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ project.repository }}</span></td>
-                <td class="px-5 py-4">
-                  <div class="flex justify-end gap-2">
+                <td class="px-5 py-4"><span
+                    class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ project.repository
+                    }}</span></td>
+                <td class="px-5 py-4 absolute">
+                  <app-actions-popover (edit)="handleEdit(project)" (deleteAction)="handleDelete(project)" />
+
+                  <!-- <div class="flex justify-end gap-2">
                     <button type="button" (click)="handleEdit(project)"
                       class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                       Modifier
@@ -140,7 +158,7 @@
                       class="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50">
                       Supprimer
                     </button>
-                  </div>
+                  </div> -->
                 </td>
               </tr>
               }
@@ -167,10 +185,10 @@
           </p>
           <p class="mt-1.5 max-w-sm text-sm text-slate-400">
             {{ projects().length
-              ? 'Aucun projet ou créateur ne correspond à votre recherche.'
-              : 'Créez votre premier projet pour commencer à configurer vos déploiements Kubernetes.' }}
+            ? 'Aucun projet ou créateur ne correspond à votre recherche.'
+            : 'Créez votre premier projet pour commencer à configurer vos déploiements Kubernetes.' }}
           </p>
-          @if (!isAdmin()) {
+          @if (hasAccess()) {
           <button type="button" (click)="openModal()"
             class="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700">
             <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"

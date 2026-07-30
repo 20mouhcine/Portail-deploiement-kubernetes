@@ -7,6 +7,7 @@ import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Enums.DeploymentStatus;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -25,6 +26,8 @@ public class DeploymentResponse {
     private Integer port;
     private String cpu;
     private String memory;
+    private String accessUrl;
+    private Map<String, String> envVariables;
     private LocalDateTime createdAt;
     private String deployedBy;
 
@@ -41,6 +44,8 @@ public class DeploymentResponse {
                 deployment.getPort(),
                 deployment.getCpu(),
                 deployment.getMemory(),
+                deployment.getAccessUrl(),
+                deployment.getEnvVariables(),
                 deployment.getCreatedAt(),
                 deployment.getDeployedBy().getUsername()
         );

@@ -66,6 +66,14 @@ export const routes: Routes = [
         title: 'Déploiements | KubePortal',
       },
       {
+        path: 'deployments/:id',
+        loadComponent: () =>
+          import('./features/deployments/pages/deployment-detail-page/deployment-detail-page').then(
+            (module) => module.DeploymentDetailPage,
+          ),
+        title: 'Détail du déploiement | KubePortal',
+      },
+      {
         path: 'history',
         loadComponent: () =>
           import('./features/history/pages/history-page/history-page').then(

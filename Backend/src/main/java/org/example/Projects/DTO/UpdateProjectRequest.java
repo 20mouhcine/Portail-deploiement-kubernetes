@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -23,5 +24,19 @@ public class UpdateProjectRequest {
     private String repository;
 
     private UUID owner_id;
+
+    private Set<String> allowedNamespaces;
+
+    private Set<String> allowedUsers;
+
+    private String environmentType;
+
+    private String deploymentPolicy;
+
+    private String cpuQuota;
+
+    private String memoryQuota;
+
+    private Integer podQuota;
 
 }

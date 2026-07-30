@@ -1,4 +1,4 @@
-package org.example.auth.config;
+package org.example.config;
 
 import org.example.auth.dto.CreateUserRequest;
 import org.example.auth.entity.Role;

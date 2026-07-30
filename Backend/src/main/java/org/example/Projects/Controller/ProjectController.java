@@ -40,7 +40,7 @@ public class ProjectController {
     }
 
     @PostMapping
-    @PreAuthorize("!hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','DEVELOPER')")
     public ResponseEntity<ApiResponse<ProjectResponse>> createApplication(
              @RequestBody CreateProjectRequest request,
              Authentication authentication,

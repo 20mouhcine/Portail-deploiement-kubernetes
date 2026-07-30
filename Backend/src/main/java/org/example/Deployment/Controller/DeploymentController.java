@@ -5,7 +5,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.Deployment.DTO.ApiResponse;
 import org.example.Deployment.DTO.CreateDeploymentRequest;
+import org.example.Deployment.DTO.DeploymentDetailResponse;
 import org.example.Deployment.DTO.DeploymentResponse;
+import org.example.Deployment.DTO.PodResponse;
 import org.example.Deployment.DTO.ScaleDeploymentRequest;
 import org.example.Deployment.DTO.UpdateDeploymentRequest;
 import org.example.Deployment.Service.IDeploymentService;
@@ -42,8 +44,16 @@ public class DeploymentController {
         ));
     }
 
+        @GetMapping("/{id}/details")
+        public ResponseEntity<ApiResponse<DeploymentDetailResponse>> details(@PathVariable UUID id) {
+                return ResponseEntity.ok(ApiResponse.success(
+                                "Détail du déploiement récupéré avec succès",
+                                deploymentService.getDetail(id)
+                ));
+        }
+
     @PostMapping
-    @PreAuthorize("hasRole('DEVOPS')")
+    @PreAuthorize("hasAnyRole('DEVOPS','ADMIN')")
     public ResponseEntity<ApiResponse<DeploymentResponse>> create(
             @Valid @RequestBody CreateDeploymentRequest request,
             Authentication authentication,
@@ -52,13 +62,13 @@ public class DeploymentController {
         DeploymentResponse response = deploymentService.create(request, authentication.getName());
         record(
                 ActionType.CREATE,
-                "Création de la configuration de déploiement",
+                "Création et déploiement sur le cluster Kubernetes",
                 response,
                 authentication,
                 httpRequest
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
-                "Configuration de déploiement créée avec succès",
+                "Déploiement créé et lancé avec succès",
                 response
         ));
     }
@@ -72,9 +82,9 @@ public class DeploymentController {
             HttpServletRequest httpRequest
     ) {
         DeploymentResponse response = deploymentService.update(id, request);
-        record(ActionType.UPDATE, "Modification de la configuration de déploiement", response, authentication, httpRequest);
+        record(ActionType.UPDATE, "Modification et mise à jour sur le cluster", response, authentication, httpRequest);
         return ResponseEntity.ok(ApiResponse.success(
-                "Configuration de déploiement modifiée avec succès",
+                "Déploiement modifié avec succès",
                 response
         ));
     }
@@ -131,6 +141,21 @@ public class DeploymentController {
         ));
     }
 
+    @PostMapping("/{id}/rollback")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    public ResponseEntity<ApiResponse<DeploymentResponse>> rollback(
+            @PathVariable UUID id,
+            Authentication authentication,
+            HttpServletRequest httpRequest
+    ) {
+        DeploymentResponse response = deploymentService.rollback(id);
+        record(ActionType.UPDATE, "Rollback vers la revision precedente", response, authentication, httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Rollback effectué avec succès",
+                response
+        ));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
     public ResponseEntity<ApiResponse<Void>> delete(
@@ -144,6 +169,22 @@ public class DeploymentController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Déploiement supprimé avec succès",
                 null
+        ));
+    }
+
+    @GetMapping("/{id}/logs")
+    public ResponseEntity<ApiResponse<String>> logs(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Logs récupérés avec succès",
+                deploymentService.getLogs(id)
+        ));
+    }
+
+    @GetMapping("/{id}/pods")
+    public ResponseEntity<ApiResponse<List<PodResponse>>> pods(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Pods récupérés avec succès",
+                deploymentService.getPods(id)
         ));
     }
 

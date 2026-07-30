@@ -1,91 +1,108 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, Subject, map, shareReplay, startWith, switchMap, tap } from 'rxjs';
 
-import { Deployment, DeploymentFormValue } from '../models/deployment.models';
+import { Deployment, DeploymentDetail, DeploymentFormValue, DeploymentStatus } from '../models/deployment.models';
+import { DeploymentSseService } from './deployment-sse.service';
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
 
 @Injectable({ providedIn: 'root' })
 export class DeploymentsService {
-  // Données temporaires : ces méthodes seront remplacées par des appels HttpClient.
-  private readonly deploymentState = signal<readonly Deployment[]>([
-    {
-      id: 'demo-api',
-      projectName: 'Portail Kubernetes',
-      name: 'backend-api',
-      status: 'RUNNING',
-      namespace: 'production',
-      replicas: 3,
-      image: 'kube-portal/backend:1.4.0',
-      port: 8080,
-      cpu: '500m',
-      memory: '512Mi',
-      createdAt: '2026-07-20T10:30:00Z',
-      deployedBy: 'devops.demo',
-    },
-    {
-      id: 'demo-frontend',
-      projectName: 'Portail Kubernetes',
-      name: 'frontend-web',
-      status: 'SUCCEEDED',
-      namespace: 'staging',
-      replicas: 2,
-      image: 'kube-portal/frontend:1.4.0',
-      port: 80,
-      cpu: '250m',
-      memory: '256Mi',
-      createdAt: '2026-07-19T14:15:00Z',
-      deployedBy: 'devops.demo',
-    },
-    {
-      id: 'demo-worker',
-      projectName: 'Service Notifications',
-      name: 'notification-worker',
-      status: 'FAILED',
-      namespace: 'development',
-      replicas: 1,
-      image: 'kube-portal/notifications:0.8.2',
-      port: 8090,
-      cpu: '300m',
-      memory: '384Mi',
-      createdAt: '2026-07-18T09:05:00Z',
-      deployedBy: 'devops.demo',
-    },
-  ]);
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = '/api/deployments';
+  private readonly sseService = inject(DeploymentSseService);
+  private readonly refresh$ = new Subject<void>();
 
-  readonly deployments = this.deploymentState.asReadonly();
+  readonly deployments$: Observable<Deployment[]> = this.refresh$.pipe(
+    startWith(undefined),
+    switchMap(() => this.http.get<Deployment[]>(this.apiUrl)),
+    switchMap((initialDeployments) => new Observable<Deployment[]>((observer) => {
+      let current = [...initialDeployments];
+      observer.next(current);
 
-  create(value: DeploymentFormValue, username: string): void {
-    const deployment: Deployment = {
-      ...value,
-      id: crypto.randomUUID(),
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      deployedBy: username,
-    };
-    this.deploymentState.update((deployments) => [deployment, ...deployments]);
+      const subscription = this.sseService.subscribeToAllDeployments().subscribe((change) => {
+        current = current.map((deployment) =>
+          deployment.id === change.deploymentId
+            ? { ...deployment, status: change.status as DeploymentStatus }
+            : deployment,
+        );
+        observer.next(current);
+      });
+
+      return () => subscription.unsubscribe();
+    })),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  private refresh(): void {
+    this.refresh$.next();
   }
 
-  update(id: string, value: DeploymentFormValue): void {
-    this.patch(id, value);
+  getById(id: string): Observable<DeploymentDetail> {
+    return this.http.get<ApiResponse<DeploymentDetail>>(`${this.apiUrl}/${id}/details`).pipe(
+      map((response) => response.data),
+    );
   }
 
-  restart(id: string): void {
-    this.patch(id, { status: 'RUNNING' });
+  getLogs(id: string): Observable<string> {
+    return this.http.get<ApiResponse<string>>(`${this.apiUrl}/${id}/logs`).pipe(
+      map((response) => response.data),
+    );
   }
 
-  stop(id: string): void {
-    this.patch(id, { status: 'STOPPED' });
+  create(value: DeploymentFormValue): Observable<Deployment> {
+    const { projectName, ...request } = value;
+    return this.http.post<ApiResponse<Deployment>>(this.apiUrl, request).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
   }
 
-  scale(id: string, replicas: number): void {
-    this.patch(id, { replicas: Math.max(1, replicas) });
+  update(id: string, value: DeploymentFormValue): Observable<Deployment> {
+    const { projectId, projectName, ...request } = value;
+    return this.http.put<ApiResponse<Deployment>>(`${this.apiUrl}/${id}`, request).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
   }
 
-  delete(id: string): void {
-    this.deploymentState.update((deployments) => deployments.filter((item) => item.id !== id));
+  rollback(id: string): Observable<Deployment> {
+    return this.http.post<ApiResponse<Deployment>>(`${this.apiUrl}/${id}/rollback`, {}).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
   }
 
-  private patch(id: string, changes: Partial<Deployment>): void {
-    this.deploymentState.update((deployments) =>
-      deployments.map((item) => item.id === id ? { ...item, ...changes } : item)
+  restart(id: string): Observable<Deployment> {
+    return this.http.patch<ApiResponse<Deployment>>(`${this.apiUrl}/${id}/restart`, {}).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
+  }
+
+  stop(id: string): Observable<Deployment> {
+    return this.http.patch<ApiResponse<Deployment>>(`${this.apiUrl}/${id}/stop`, {}).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
+  }
+
+  scale(id: string, replicas: number): Observable<Deployment> {
+    return this.http.patch<ApiResponse<Deployment>>(`${this.apiUrl}/${id}/scale`, { replicas }).pipe(
+      map((response) => response.data),
+      tap(() => this.refresh()),
+    );
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(
+      map(() => undefined),
+      tap(() => this.refresh()),
     );
   }
 }

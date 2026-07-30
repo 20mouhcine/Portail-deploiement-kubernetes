@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import org.example.auth.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -30,6 +32,7 @@ public class Project {
     String description;
 
     String repository;
+
 
     LocalDateTime createdAt;
     @ManyToOne

@@ -1,21 +1,222 @@
 @if (open()) {
-<div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/55 p-4" (click)="close()">
-  <section class="my-6 w-full max-w-2xl rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <header class="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-      <div><p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Kubernetes</p><h2 class="mt-1 text-xl font-bold text-slate-950">{{ mode() === 'create' ? 'Nouveau déploiement' : 'Modifier le déploiement' }}</h2><p class="mt-1 text-sm text-slate-500">Configurez l'image et les ressources du conteneur.</p></div>
-      <button type="button" (click)="close()" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer">✕</button>
+<div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/60 p-4" (click)="close()">
+  <section class="my-6 w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" role="dialog"
+    aria-modal="true" (click)="$event.stopPropagation()">
+
+    <header class="border-b border-slate-200 px-5 py-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Kubernetes</p>
+          <h2 class="mt-0.5 text-lg font-bold text-slate-950">
+            {{ mode() === 'create' ? 'Nouveau déploiement' : 'Modifier le déploiement' }}
+          </h2>
+        </div>
+        <button type="button" (click)="close()"
+          class="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Fermer">✕</button>
+      </div>
+
+      <!-- Step indicator -->
+      <ol class="mt-4 flex items-center gap-1">
+        @for (label of stepLabels; track $index) {
+        <li class="flex flex-1 items-center gap-1">
+          <button type="button" (click)="goToStep($index)"
+            class="flex w-full flex-col items-center gap-1.5 rounded-md py-1.5 transition"
+            [class.cursor-default]="$index > currentStep()">
+            <span class="h-1.5 w-full rounded-full transition"
+              [class.bg-blue-600]="$index <= currentStep()"
+              [class.bg-slate-200]="$index > currentStep()"></span>
+            <span class="text-[11px] font-semibold"
+              [class.text-blue-600]="$index === currentStep()"
+              [class.text-slate-400]="$index !== currentStep()">
+              {{ label }}
+            </span>
+          </button>
+        </li>
+        }
+      </ol>
     </header>
-    <form [formGroup]="form" (ngSubmit)="submit()" class="grid gap-5 px-6 py-5 sm:grid-cols-2">
-      <label class="text-sm font-semibold text-slate-700">Projet<input formControlName="projectName" placeholder="Portail Kubernetes" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Nom du déploiement<input formControlName="name" placeholder="backend-api" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Namespace<input formControlName="namespace" placeholder="production" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Image Docker<input formControlName="image" placeholder="organisation/application:1.0.0" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Réplicas<input type="number" formControlName="replicas" min="1" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Port<input type="number" formControlName="port" min="1" max="65535" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">CPU<input formControlName="cpu" placeholder="250m" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
-      <label class="text-sm font-semibold text-slate-700">Mémoire<input formControlName="memory" placeholder="256Mi" class="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></label>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="px-5 py-5">
+
+      <!-- Step 1: Projet & identité -->
+      @if (currentStep() === 0) {
+      <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+        <label class="relative text-sm font-semibold text-slate-700">Projet
+          <input formControlName="projectName" placeholder="Portail Kubernetes" (input)="onUserTyping($event)"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+          @if (filteredProjects.length > 0 && !isProjectSelected()) {
+          <div class="absolute top-full left-0 right-0 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg z-20">
+            @for (project of filteredProjects; track project.id) {
+            <button type="button" (click)="selectProject(project)"
+              class="w-full cursor-pointer px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600">
+              {{ project.name }}
+            </button>
+            }
+          </div>
+          }
+          @if (form.get('projectName')?.invalid && form.get('projectName')?.touched) {
+          <p class="mt-1 text-xs text-red-600">Le projet est requis.</p>
+          }
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Nom du déploiement
+          <input formControlName="name" placeholder="backend-api"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+          @if (form.get('name')?.invalid && form.get('name')?.touched) {
+          <p class="mt-1 text-xs text-red-600">Le nom est requis.</p>
+          }
+        </label>
+        <label class="text-sm font-semibold text-slate-700 sm:col-span-2">Namespace
+          <input formControlName="namespace" placeholder="production"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+      </div>
+      }
+
+      <!-- Step 2: Conteneur -->
+      @if (currentStep() === 1) {
+      <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+        <label class="text-sm font-semibold text-slate-700 sm:col-span-2">Image Docker
+          <input formControlName="image" placeholder="organisation/application:1.0.0"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+          @if (form.get('image')?.invalid && form.get('image')?.touched) {
+          <p class="mt-1 text-xs text-red-600">L'image est requise.</p>
+          }
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Réplicas
+          <input type="number" formControlName="replicas" min="1"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Port
+          <input type="number" formControlName="port" min="1" max="65535"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">CPU
+          <input formControlName="cpu" placeholder="250m"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Mémoire
+          <input formControlName="memory" placeholder="256Mi"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+      </div>
+      }
+
+      <!-- Step 3: Source Git -->
+      <!-- @if (currentStep() === 2) {
+      <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+        <label class="text-sm font-semibold text-slate-700 sm:col-span-2">Repository Git
+          <input formControlName="gitRepository" placeholder="https://github.com/org/repo"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Branche Git
+          <input formControlName="gitBranch" placeholder="main"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Commit / tag
+          <input formControlName="gitCommit" placeholder="a1b2c3d ou v1.0.0"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Révision Git
+          <input formControlName="gitTag" placeholder="v1.2.3"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+      </div>
+      } -->
+
+      <!-- Step 4: Réseau & TLS -->
+      <!-- @if (currentStep() === 3) {
+      <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+        <label class="text-sm font-semibold text-slate-700">Hostname souhaité
+          <input formControlName="requestedHostname" placeholder="app.example.com"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Path souhaité
+          <input formControlName="requestedPath" placeholder="/"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">Secret TLS
+          <input formControlName="tlsSecretName" placeholder="app-tls"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        </label>
+        <label class="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
+          <input type="checkbox" formControlName="tlsEnabled" class="size-4 rounded border-slate-300 text-blue-600" />
+          TLS activé
+        </label>
+      </div>
+      } -->
+
+      <!-- Step 5: Variables & secrets -->
+      @if (currentStep() === 2) {
+      <div class="flex flex-col gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700">Secrets Kubernetes</label>
+          <textarea formControlName="secretVariables" rows="5" spellcheck="false"
+            class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            placeholder='{"API_KEY":"***","DB_PASSWORD":"***"}'></textarea>
+          <p class="mt-1 text-xs text-slate-500">Les valeurs sont masquées dans l'interface et envoyées au backend comme secrets.</p>
+          @if (form.get('secretVariables')?.errors?.['invalidJson']) {
+          <p class="mt-1 text-xs text-red-600">JSON invalide.</p>
+          }
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-700">Variables d'environnement</span>
+            <button type="button" (click)="addEnvVar()"
+              class="flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100">
+              <span class="text-base leading-none">+</span> Ajouter
+            </button>
+          </div>
+
+          @if (envVariables.length === 0) {
+          <p class="rounded-md border border-dashed border-slate-200 bg-slate-50 py-4 text-center text-xs text-slate-400">
+            Aucune variable — cliquez sur « Ajouter » pour en créer une.
+          </p>
+          }
+
+          <div formArrayName="envVariables" class="flex flex-col gap-2">
+            @for (row of envVariables.controls; track $index) {
+            <div [formGroupName]="$index" class="flex items-center gap-2">
+              <input formControlName="key" placeholder="NOM_VARIABLE"
+                class="w-2/5 rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <span class="text-slate-400">=</span>
+              <input formControlName="value" placeholder="valeur"
+                class="flex-1 rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" (click)="removeEnvVar($index)"
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                aria-label="Supprimer">✕</button>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+      }
     </form>
-    <footer class="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4"><button type="button" (click)="close()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button><button type="button" (click)="submit()" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 hover:bg-blue-700">Enregistrer</button></footer>
+
+    <footer class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+      <button type="button" (click)="prevStep()" [disabled]="isFirstStep()"
+        class="rounded-md px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-40">
+        Précédent
+      </button>
+
+      <div class="flex gap-2">
+        <button type="button" (click)="close()"
+          class="rounded-md px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">
+          Annuler
+        </button>
+        @if (!isLastStep()) {
+        <button type="button" (click)="nextStep()"
+          class="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+          Suivant
+        </button>
+        } @else {
+        <button type="button" (click)="submit()"
+          class="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+          Enregistrer
+        </button>
+        }
+      </div>
+    </footer>
   </section>
 </div>
 }

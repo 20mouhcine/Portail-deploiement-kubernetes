@@ -41,6 +41,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Les données envoyées sont invalides", request, fields);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(
+            IllegalArgumentException exception,
+            HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Map.of());
+    }
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleConstraintViolation(
             DataIntegrityViolationException exception,
