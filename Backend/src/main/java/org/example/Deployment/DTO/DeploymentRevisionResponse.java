@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.example.Deployment.Entity.DeploymentRevision;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public class DeploymentRevisionResponse {
     private String gitTag;
     private LocalDateTime createdAt;
     private Map<String, String> envVariables;
-    private Map<String, String> secretVariables;
+    private List<String> secretKeys;
     private String requestedHostname;
     private String requestedPath;
     private Boolean tlsEnabled;
@@ -44,7 +45,7 @@ public class DeploymentRevisionResponse {
                 revision.getGitTag(),
                 revision.getCreatedAt(),
                 revision.getEnvVariables(),
-                revision.getSecretVariables(),
+                revision.getSecretVariables().keySet().stream().sorted().toList(),
                 revision.getRequestedHostname(),
                 revision.getRequestedPath(),
                 revision.getTlsEnabled(),
@@ -52,3 +53,4 @@ public class DeploymentRevisionResponse {
         );
     }
 }
+

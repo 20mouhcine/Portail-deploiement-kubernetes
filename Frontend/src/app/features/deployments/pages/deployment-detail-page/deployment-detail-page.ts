@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -34,7 +34,7 @@ export class DeploymentDetailPage {
 
   protected readonly user = this.auth.user;
   protected readonly canManage = computed(() => this.user()?.roles.some((role) => role === 'ADMIN' || role === 'DEVOPS') ?? false);
-  protected readonly secretEntries = computed(() => Object.entries(this.deployment()?.secretVariables ?? {}));
+  protected readonly secretKeys = computed(() => this.deployment()?.secretKeys ?? []);
   protected readonly configEntries = computed(() => Object.entries(this.deployment()?.configVariables ?? this.deployment()?.envVariables ?? {}));
   protected readonly latestRevision = computed(() => this.deployment()?.rolloutHistory?.[0] ?? null);
   protected readonly previousRevision = computed<DeploymentRevision | null>(() => this.deployment()?.rolloutHistory?.[1] ?? null);
@@ -64,7 +64,7 @@ export class DeploymentDetailPage {
     const current = this.deployment();
     const image = this.newImage().trim();
     if (!current || !image) {
-      this.actionError.set('Indiquez une image avant de lancer le déploiement.');
+      this.actionError.set('Indiquez une image avant de lancer le dÃ©ploiement.');
       return;
     }
 
@@ -110,15 +110,15 @@ export class DeploymentDetailPage {
     const labels: Record<string, string> = {
       PENDING: 'En progression',
       RUNNING: 'Actif',
-      FAILED: 'En échec',
-      STOPPED: 'Arrêté',
+      FAILED: 'En Ã©chec',
+      STOPPED: 'ArrÃªtÃ©',
       SUCCEEDED: 'Stable',
     };
     return labels[status] ?? status;
   }
 
   protected maskSecret(value: string): string {
-    return value ? '••••••••' : '—';
+    return value ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' : 'â€”';
   }
 
   protected revisionBadge(revision: DeploymentRevision): string {

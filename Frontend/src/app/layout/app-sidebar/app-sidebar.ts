@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { CurrentUser } from '../../core/auth/models/auth.models';
@@ -16,7 +16,9 @@ const COLLAPSE_STORAGE_KEY = 'app-sidebar-collapsed';
 export class AppSidebar {
   readonly user = input.required<CurrentUser>();
   readonly loggingOut = input(false);
+  readonly mobileOpen = input(false);
   readonly logoutRequested = output<void>();
+  readonly mobileCloseRequested = output<void>();
 
   readonly collapsedChange = output<boolean>();
 
@@ -28,10 +30,12 @@ export class AppSidebar {
     try {
       localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next));
     } catch {
-      // localStorage unavailable (e.g. private browsing) — ignore, state still works in-memory
+      // localStorage unavailable (e.g. private browsing) â€” ignore, state still works in-memory
     }
     this.collapsedChange.emit(next);
   }
+
+  protected closeMobileMenu(): void { this.mobileCloseRequested.emit(); }
 
   private readStoredCollapsed(): boolean {
     try {

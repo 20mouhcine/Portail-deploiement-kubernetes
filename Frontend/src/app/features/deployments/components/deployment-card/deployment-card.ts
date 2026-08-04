@@ -14,6 +14,7 @@ import { inject } from '@angular/core';
 export class DeploymentCard {
   readonly deployment = input.required<Deployment>();
   readonly canManage = input(false);
+  readonly operationInProgress = input(false);
 
   readonly editRequested = output<Deployment>();
   readonly detailsRequested = output<Deployment>();

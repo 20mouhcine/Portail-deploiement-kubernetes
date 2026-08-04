@@ -3,6 +3,7 @@ package org.example.Deployment.Service;
 import org.example.Deployment.DTO.CreateDeploymentRequest;
 import org.example.Deployment.DTO.DeploymentDetailResponse;
 import org.example.Deployment.DTO.DeploymentResponse;
+import org.example.Deployment.DTO.DeploymentJobResponse;
 import org.example.Deployment.DTO.PodResponse;
 import org.example.Deployment.DTO.UpdateDeploymentRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,8 @@ public interface IDeploymentService {
     DeploymentResponse rollback(UUID id);
 
     void delete(UUID id);
+
+    DeploymentJobResponse getJobStatus(UUID jobId);
 
     @Transactional(readOnly = true)
     String getLogs(UUID id);

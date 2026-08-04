@@ -26,6 +26,30 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.app-main-shell {
+  width: 100%;
+  margin-left: 0;
+  transition: margin-left 300ms ease-in-out, width 300ms ease-in-out;
+}
+
+@media (min-width: 64rem) {
+  .app-main-shell {
+    width: calc(100% - var(--sidebar-width, 18rem));
+    margin-left: var(--sidebar-width, 18rem);
+  }
+}
+/* Authenticated pages should use all available space beside the sidebar. */
+.page-shell .mx-auto.max-w-7xl {
+  width: 100%;
+  max-width: none;
+  margin-right: 0;
+  margin-left: 0;
+}
+.page-shell {
+  min-height: calc(100vh - 4rem);
+  background: radial-gradient(circle at 100% 0%, rgb(219 234 254 / 0.55), transparent 26rem), var(--color-surface);
+}
+
 button,
 input {
   font: inherit;
@@ -37,3 +61,4 @@ a:focus-visible {
   outline: 3px solid rgb(37 99 235 / 0.35);
   outline-offset: 2px;
 }
+

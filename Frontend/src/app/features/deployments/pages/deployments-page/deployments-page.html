@@ -56,7 +56,7 @@
   @if (filteredDeployments().length) {
   <section class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     @for (deployment of filteredDeployments(); track deployment.id) {
-    <app-deployment-card [deployment]="deployment" [canManage]="canManage() && !actionInProgress()" (detailsRequested)="openDetails($event)"
+    <app-deployment-card [deployment]="deployment" [canManage]="canManage() && !actionInProgress()" [operationInProgress]="activeOperations().has(deployment.id)" (detailsRequested)="openDetails($event)"
       (editRequested)="openEdit($event)" (restartRequested)="restart($event)" (stopRequested)="stop($event)"
       (scaleRequested)="scale($event)" (deleteRequested)="askDelete($event)" (logsRequested)="openLogs($event)" />
     }

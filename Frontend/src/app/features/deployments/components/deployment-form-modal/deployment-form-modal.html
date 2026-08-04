@@ -1,4 +1,4 @@
-@if (open()) {
+﻿@if (open()) {
 <div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/60 p-4" (click)="close()">
   <section class="my-6 w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl" role="dialog"
     aria-modal="true" (click)="$event.stopPropagation()">
@@ -8,11 +8,11 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Kubernetes</p>
           <h2 class="mt-0.5 text-lg font-bold text-slate-950">
-            {{ mode() === 'create' ? 'Nouveau déploiement' : 'Modifier le déploiement' }}
+            {{ mode() === 'create' ? 'Nouveau dÃ©ploiement' : 'Modifier le dÃ©ploiement' }}
           </h2>
         </div>
         <button type="button" (click)="close()"
-          class="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Fermer">✕</button>
+          class="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Fermer">âœ•</button>
       </div>
 
       <!-- Step indicator -->
@@ -38,7 +38,7 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="px-5 py-5">
 
-      <!-- Step 1: Projet & identité -->
+      <!-- Step 1: Projet & identitÃ© -->
       @if (currentStep() === 0) {
       <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
         <label class="relative text-sm font-semibold text-slate-700">Projet
@@ -58,7 +58,7 @@
           <p class="mt-1 text-xs text-red-600">Le projet est requis.</p>
           }
         </label>
-        <label class="text-sm font-semibold text-slate-700">Nom du déploiement
+        <label class="text-sm font-semibold text-slate-700">Nom du dÃ©ploiement
           <input formControlName="name" placeholder="backend-api"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
           @if (form.get('name')?.invalid && form.get('name')?.touched) {
@@ -82,7 +82,7 @@
           <p class="mt-1 text-xs text-red-600">L'image est requise.</p>
           }
         </label>
-        <label class="text-sm font-semibold text-slate-700">Réplicas
+        <label class="text-sm font-semibold text-slate-700">RÃ©plicas
           <input type="number" formControlName="replicas" min="1"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
@@ -94,7 +94,7 @@
           <input formControlName="cpu" placeholder="250m"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
-        <label class="text-sm font-semibold text-slate-700">Mémoire
+        <label class="text-sm font-semibold text-slate-700">MÃ©moire
           <input formControlName="memory" placeholder="256Mi"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
@@ -116,21 +116,21 @@
           <input formControlName="gitCommit" placeholder="a1b2c3d ou v1.0.0"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
-        <label class="text-sm font-semibold text-slate-700">Révision Git
+        <label class="text-sm font-semibold text-slate-700">RÃ©vision Git
           <input formControlName="gitTag" placeholder="v1.2.3"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
       </div>
       } -->
 
-      <!-- Step 4: Réseau & TLS -->
+      <!-- Step 4: RÃ©seau & TLS -->
       <!-- @if (currentStep() === 3) {
       <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-        <label class="text-sm font-semibold text-slate-700">Hostname souhaité
+        <label class="text-sm font-semibold text-slate-700">Hostname souhaitÃ©
           <input formControlName="requestedHostname" placeholder="app.example.com"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
-        <label class="text-sm font-semibold text-slate-700">Path souhaité
+        <label class="text-sm font-semibold text-slate-700">Path souhaitÃ©
           <input formControlName="requestedPath" placeholder="/"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>
@@ -140,7 +140,7 @@
         </label>
         <label class="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
           <input type="checkbox" formControlName="tlsEnabled" class="size-4 rounded border-slate-300 text-blue-600" />
-          TLS activé
+          TLS activÃ©
         </label>
       </div>
       } -->
@@ -152,8 +152,8 @@
           <label class="block text-sm font-semibold text-slate-700">Secrets Kubernetes</label>
           <textarea formControlName="secretVariables" rows="5" spellcheck="false"
             class="mt-1.5 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            placeholder='{"API_KEY":"***","DB_PASSWORD":"***"}'></textarea>
-          <p class="mt-1 text-xs text-slate-500">Les valeurs sont masquées dans l'interface et envoyées au backend comme secrets.</p>
+            placeholder='{"API_KEY":"app-secrets/api-key","DB_PASSWORD":"database-secrets/password"}'></textarea>
+          <p class="mt-1 text-xs text-slate-500">Indiquez uniquement des références <code>nom-du-secret/clé</code>. Les valeurs ne transitent jamais par le portail.</p>
           @if (form.get('secretVariables')?.errors?.['invalidJson']) {
           <p class="mt-1 text-xs text-red-600">JSON invalide.</p>
           }
@@ -170,7 +170,7 @@
 
           @if (envVariables.length === 0) {
           <p class="rounded-md border border-dashed border-slate-200 bg-slate-50 py-4 text-center text-xs text-slate-400">
-            Aucune variable — cliquez sur « Ajouter » pour en créer une.
+            Aucune variable â€” cliquez sur Â« Ajouter Â» pour en crÃ©er une.
           </p>
           }
 
@@ -184,7 +184,7 @@
                 class="flex-1 rounded-md border border-slate-200 px-3 py-1.5 font-mono text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               <button type="button" (click)="removeEnvVar($index)"
                 class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                aria-label="Supprimer">✕</button>
+                aria-label="Supprimer">âœ•</button>
             </div>
             }
           </div>
@@ -196,7 +196,7 @@
     <footer class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
       <button type="button" (click)="prevStep()" [disabled]="isFirstStep()"
         class="rounded-md px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-40">
-        Précédent
+        PrÃ©cÃ©dent
       </button>
 
       <div class="flex gap-2">

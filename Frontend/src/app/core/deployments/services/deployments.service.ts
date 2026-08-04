@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject, map, shareReplay, startWith, switchMap, tap } from 'rxjs';
+import { Observable, Subject, map, shareReplay, startWith, switchMap, tap, timer, filter, take } from 'rxjs';
 
-import { Deployment, DeploymentDetail, DeploymentFormValue, DeploymentStatus } from '../models/deployment.models';
+import { Deployment, DeploymentDetail, DeploymentFormValue, DeploymentStatus, DeploymentJobResponse } from '../models/deployment.models';
 import { DeploymentSseService } from './deployment-sse.service';
 
 interface ApiResponse<T> {
@@ -103,6 +103,20 @@ export class DeploymentsService {
     return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(
       map(() => undefined),
       tap(() => this.refresh()),
+    );
+  }
+
+  getOperationStatus(operationId: string): Observable<DeploymentJobResponse> {
+    return this.http.get<ApiResponse<DeploymentJobResponse>>(`${this.apiUrl}/operations/${operationId}`).pipe(
+      map(response => response.data)
+    );
+  }
+
+  waitForOperation(operationId: string): Observable<DeploymentJobResponse> {
+    return timer(0, 2000).pipe(
+      switchMap(() => this.getOperationStatus(operationId)),
+      filter(status => status.status === 'READY' || status.status === 'FAILED'),
+      take(1)
     );
   }
 }

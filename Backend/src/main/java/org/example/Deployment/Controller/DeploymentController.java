@@ -7,6 +7,7 @@ import org.example.Deployment.DTO.ApiResponse;
 import org.example.Deployment.DTO.CreateDeploymentRequest;
 import org.example.Deployment.DTO.DeploymentDetailResponse;
 import org.example.Deployment.DTO.DeploymentResponse;
+import org.example.Deployment.DTO.DeploymentJobResponse;
 import org.example.Deployment.DTO.PodResponse;
 import org.example.Deployment.DTO.ScaleDeploymentRequest;
 import org.example.Deployment.DTO.UpdateDeploymentRequest;
@@ -51,6 +52,14 @@ public class DeploymentController {
                                 deploymentService.getDetail(id)
                 ));
         }
+
+    @GetMapping("/operations/{operationId}")
+    public ResponseEntity<ApiResponse<DeploymentJobResponse>> getOperationStatus(@PathVariable UUID operationId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Statut de l'opération récupéré avec succès",
+                deploymentService.getJobStatus(operationId)
+        ));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('DEVOPS','ADMIN')")

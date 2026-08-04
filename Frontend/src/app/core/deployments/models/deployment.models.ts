@@ -3,6 +3,20 @@ export type DeploymentStatus = 'PENDING' | 'RUNNING' | 'FAILED' | 'STOPPED';
 export type DeploymentEventLevel = 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
 export type DeploymentEventSource = 'SYSTEM' | 'KUBERNETES' | 'CONTAINER';
 
+export type JobStatus = 'QUEUED' | 'APPLYING' | 'ROLLING_OUT' | 'READY' | 'FAILED';
+export type JobOperationType = 'CREATE' | 'UPDATE' | 'SCALE' | 'DELETE' | 'RESTART';
+
+export interface DeploymentJobResponse {
+  readonly id: string;
+  readonly deploymentId: string;
+  readonly operationType: JobOperationType;
+  readonly status: JobStatus;
+  readonly retryCount: number;
+  readonly errorMessage: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface DeploymentPod {
   readonly name: string;
   readonly status: string;
@@ -79,11 +93,12 @@ export interface Deployment {
   readonly pods?: DeploymentPod[];
   readonly events?: DeploymentEvent[];
   readonly rolloutHistory?: DeploymentRevision[];
+  readonly operationId?: string;
 }
 
 export interface DeploymentDetail extends Deployment {
   readonly configVariables?: Record<string, string>;
-  readonly secretVariables?: Record<string, string>;
+  readonly secretKeys?: readonly string[];
   readonly logs?: string;
 }
 
@@ -108,3 +123,4 @@ export interface DeploymentFormValue {
   // readonly tlsEnabled: boolean;
   // readonly tlsSecretName: string;
 }
+

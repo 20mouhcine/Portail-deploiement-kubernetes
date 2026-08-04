@@ -17,6 +17,15 @@ export class AuthenticatedLayout {
 
   protected readonly user = this.auth.user;
   protected readonly loggingOut = signal(false);
+  protected readonly mobileMenuOpen = signal(false);
+  protected readonly sidebarCollapsed = signal(this.readStoredSidebarState());
+
+  protected toggleMobileMenu(): void { this.mobileMenuOpen.update((open) => !open); }
+  protected closeMobileMenu(): void { this.mobileMenuOpen.set(false); }
+
+  private readStoredSidebarState(): boolean {
+    try { return localStorage.getItem('app-sidebar-collapsed') === 'true'; } catch { return false; }
+  }
 
   protected logout(): void {
     if (this.loggingOut()) {
@@ -33,3 +42,4 @@ export class AuthenticatedLayout {
       });
   }
 }
+

@@ -34,6 +34,7 @@ export class DeploymentsPage {
   protected readonly logsDeployment = signal<Deployment | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly actionInProgress = signal(false);
+  protected readonly activeOperations = signal<Set<string>>(new Set());
 
   protected readonly canCreate = computed(() => (this.user()?.roles.includes('DEVOPS') || this.user()?.roles.includes('ADMIN')) ?? false);
   protected readonly canManage = computed(() =>
@@ -113,8 +114,47 @@ export class DeploymentsPage {
     this.clearActionError();
     this.actionInProgress.set(true);
     operation.pipe(finalize(() => this.actionInProgress.set(false))).subscribe({
-      next: () => onSuccess?.(),
+      next: (result) => {
+        onSuccess?.();
+        if (result && typeof result === 'object' && 'operationId' in result && result.operationId) {
+          this.trackOperation(result as Deployment);
+        }
+      },
       error: (error) => this.actionError.set(this.auth.errorMessage(error)),
+    });
+  }
+
+  private trackOperation(deployment: Deployment): void {
+    if (!deployment.operationId) return;
+
+    this.activeOperations.update(set => {
+      const newSet = new Set(set);
+      newSet.add(deployment.id);
+      return newSet;
+    });
+
+    this.service.waitForOperation(deployment.operationId).subscribe({
+      next: (job) => {
+        this.activeOperations.update(set => {
+          const newSet = new Set(set);
+          newSet.delete(deployment.id);
+          return newSet;
+        });
+
+        if (job.status === 'FAILED') {
+          this.actionError.set(job.errorMessage || 'Operation failed');
+        } else {
+          // Success, relying on SSE to update the list, but we can also trigger a manual refresh
+          // this.service['refresh'](); // optional
+        }
+      },
+      error: () => {
+        this.activeOperations.update(set => {
+          const newSet = new Set(set);
+          newSet.delete(deployment.id);
+          return newSet;
+        });
+      }
     });
   }
 }

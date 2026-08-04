@@ -30,6 +30,7 @@ public class DeploymentResponse {
     private Map<String, String> envVariables;
     private LocalDateTime createdAt;
     private String deployedBy;
+    private UUID operationId;
 
     public static DeploymentResponse from(Deployment deployment) {
         return new DeploymentResponse(
@@ -47,7 +48,29 @@ public class DeploymentResponse {
                 deployment.getAccessUrl(),
                 deployment.getEnvVariables(),
                 deployment.getCreatedAt(),
-                deployment.getDeployedBy().getUsername()
+                deployment.getDeployedBy().getUsername(),
+                null
+        );
+    }
+
+    public static DeploymentResponse from(Deployment deployment, UUID operationId) {
+        return new DeploymentResponse(
+                deployment.getId(),
+                deployment.getProject().getId(),
+                deployment.getProject().getName(),
+                deployment.getName(),
+                deployment.getStatus(),
+                deployment.getNamespace(),
+                deployment.getReplicas(),
+                deployment.getImage(),
+                deployment.getPort(),
+                deployment.getCpu(),
+                deployment.getMemory(),
+                deployment.getAccessUrl(),
+                deployment.getEnvVariables(),
+                deployment.getCreatedAt(),
+                deployment.getDeployedBy().getUsername(),
+                operationId
         );
     }
 }

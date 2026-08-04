@@ -31,7 +31,7 @@ public class DeploymentDetailResponse {
     private String memory;
     private String accessUrl;
     private Map<String, String> configVariables;
-    private Map<String, String> secretVariables;
+    private List<String> secretKeys;
     private String gitRepository;
     private String gitBranch;
     private String gitCommit;
@@ -75,7 +75,7 @@ public class DeploymentDetailResponse {
                 .memory(deployment.getMemory())
                 .accessUrl(deployment.getAccessUrl())
                 .configVariables(deployment.getEnvVariables())
-                .secretVariables(deployment.getSecretVariables())
+                .secretKeys(deployment.getSecretVariables().keySet().stream().sorted().toList())
                 .gitRepository(deployment.getGitRepository())
                 .gitBranch(deployment.getGitBranch())
                 .gitCommit(deployment.getGitCommit())

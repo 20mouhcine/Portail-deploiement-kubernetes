@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Logger;
 
 @Service
 @Slf4j
@@ -44,7 +45,8 @@ public class DeploymentStatusSynchronizer {
         int failures = consecutiveFailures.merge(deploymentId, 1, Integer::sum);
         if (failures >= MAX_CONSECUTIVE_FAILURES) {
             stoppedDeployments.put(deploymentId, true);
-            log.warn("Stopped status tracking for deployment {} after {} consecutive failed checks", deploymentId, failures);
+            log.warn("Stopped status tracking for deployment {} after {} consecutive failed checks", deploymentId,
+                    failures);
         }
     }
 }

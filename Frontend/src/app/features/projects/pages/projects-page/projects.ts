@@ -1,9 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
 import { ProjectsService } from '../../../../core/projects/services/projects.service';
 import { AuthService } from '../../../../core/auth/services/auth.service';
-import { AppSidebar } from '../../../../layout/app-sidebar/app-sidebar';
-import { finalize } from 'rxjs';
-import { Router } from '@angular/router';
 import Project, { ProjectFormValue } from '../../../../core/projects/models/projects.model';
 import { CreateProjectsFormModal } from '../../components/create-projects-form-modal/create-projects-form-modal';
 import { ActionsPopover } from '../../components/actions-popover/actions-popover';
@@ -13,7 +10,7 @@ import { ConfirmDeleteModal } from '../../components/confirm-delete-modal/confir
   selector: 'app-apps',
   standalone: true,
   templateUrl: './projects.html',
-  imports: [AppSidebar, CreateProjectsFormModal, ActionsPopover, ConfirmDeleteModal],
+  imports: [CreateProjectsFormModal, ActionsPopover, ConfirmDeleteModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -21,8 +18,8 @@ export class Projects implements OnInit {
   private service = inject(ProjectsService);
   private auth = inject(AuthService);
   protected readonly user = this.auth.user;
-  protected readonly loggingOut = signal(false);
-  private readonly router = inject(Router);
+
+
 
 
   protected readonly projects = signal<Project[]>([]);
@@ -64,21 +61,6 @@ export class Projects implements OnInit {
       repository: ''
     };
   });
-
-  protected logout(): void {
-    if (this.loggingOut()) {
-      return;
-    }
-
-    this.loggingOut.set(true);
-    this.auth
-      .logout()
-      .pipe(finalize(() => this.loggingOut.set(false)))
-      .subscribe({
-        next: () => void this.router.navigate(['/login']),
-        error: () => void this.router.navigate(['/login']),
-      });
-  }
 
   ngOnInit() {
     this.refresh();
@@ -177,3 +159,4 @@ export class Projects implements OnInit {
     }
   }
 }
+

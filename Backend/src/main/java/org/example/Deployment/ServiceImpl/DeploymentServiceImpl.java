@@ -1,19 +1,13 @@
 package org.example.Deployment.ServiceImpl;
 
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.Deployment.DTO.CreateDeploymentRequest;
-import org.example.Deployment.DTO.DeploymentDetailResponse;
-import org.example.Deployment.DTO.DeploymentEventResponse;
-import org.example.Deployment.DTO.DeploymentResponse;
-import org.example.Deployment.DTO.DeploymentRevisionResponse;
-import org.example.Deployment.DTO.PodResponse;
-import org.example.Deployment.DTO.UpdateDeploymentRequest;
+import org.example.Deployment.DTO.*;
 import org.example.Deployment.Entity.Deployment;
+import org.example.Deployment.Entity.DeploymentJob;
 import org.example.Deployment.Entity.DeploymentRevision;
 import org.example.Deployment.Enums.DeploymentStatus;
-import org.example.Deployment.Exception.KubernetesOperationException;
+import org.example.Deployment.Repository.DeploymentJobRepository;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Repository.DeploymentRevisionRepository;
 import org.example.Deployment.Service.IDeploymentEventService;
@@ -47,6 +41,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
     private final IKubernetesDeploymentService kubernetesDeploymentService;
     private final DeploymentStatusSynchronizer deploymentStatusSynchronizer;
     private final IDeploymentEventService deploymentEventService;
+    private final DeploymentJobRepository deploymentJobRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,47 +58,46 @@ public class DeploymentServiceImpl implements IDeploymentService {
         return DeploymentResponse.from(getDeployment(id));
     }
 
-        @Override
-        @Transactional(readOnly = true)
-        public DeploymentDetailResponse getDetail(UUID id) {
+    @Override
+    @Transactional(readOnly = true)
+    public DeploymentDetailResponse getDetail(UUID id) {
         Deployment deployment = getDeployment(id);
         List<PodResponse> pods = getPods(id);
         List<DeploymentRevisionResponse> rolloutHistory = deploymentRevisionRepository
-            .findByDeploymentIdOrderByRevisionNumberDesc(id)
-            .stream()
-            .map(DeploymentRevisionResponse::from)
-            .toList();
+                .findByDeploymentIdOrderByRevisionNumberDesc(id)
+                .stream()
+                .map(DeploymentRevisionResponse::from)
+                .toList();
         List<DeploymentEventResponse> events = deploymentEventService
-            .findByDeploymentIdOrderByTimestampDesc(id)
-            .stream()
-            .limit(25)
-            .map(DeploymentEventResponse::from)
-            .toList();
+                .findByDeploymentIdOrderByTimestampDesc(id)
+                .stream()
+                .limit(25)
+                .map(DeploymentEventResponse::from)
+                .toList();
 
         int availableReplicas = (int) pods.stream().filter(pod -> "Running".equalsIgnoreCase(pod.getStatus())).count();
         int readyReplicas = (int) pods.stream().filter(pod -> Boolean.TRUE.equals(pod.getReady())).count();
         int unavailableReplicas = Math.max(deployment.getReplicas() - availableReplicas, 0);
         String failureCause = events.stream()
-            .filter(event -> "ERROR".equalsIgnoreCase(event.getLevel()))
-            .map(DeploymentEventResponse::getMessage)
-            .findFirst()
-            .orElseGet(() -> pods.stream()
-                .map(PodResponse::getReason)
-                .filter(reason -> reason != null && !reason.isBlank())
+                .filter(event -> "ERROR".equalsIgnoreCase(event.getLevel()))
+                .map(DeploymentEventResponse::getMessage)
                 .findFirst()
-                .orElse(null));
+                .orElseGet(() -> pods.stream()
+                        .map(PodResponse::getReason)
+                        .filter(reason -> reason != null && !reason.isBlank())
+                        .findFirst()
+                        .orElse(null));
 
         return DeploymentDetailResponse.from(
-            deployment,
-            pods,
-            events,
-            rolloutHistory,
-            availableReplicas,
-            readyReplicas,
-            unavailableReplicas,
-            failureCause
-        );
-        }
+                deployment,
+                pods,
+                events,
+                rolloutHistory,
+                availableReplicas,
+                readyReplicas,
+                unavailableReplicas,
+                failureCause);
+    }
 
     @Override
     public DeploymentResponse create(CreateDeploymentRequest request, String username) {
@@ -145,25 +139,19 @@ public class DeploymentServiceImpl implements IDeploymentService {
         deployment.setStatus(DeploymentStatus.PENDING);
 
         Deployment saved = deploymentRepository.save(deployment);
-        deploymentStatusSynchronizer.resumeTracking(saved);
 
-        logger.info("Deployment created: " + saved);
-        try {
-            String accessUrl = kubernetesDeploymentService.deploy(saved);
-            saved.setAccessUrl(accessUrl);
-            logger.info("Access URL set for deployment {}: {}"+ saved.getName()+ accessUrl);
-            deploymentRepository.save(saved);
-            saveRevisionSnapshot(saved);
-        } catch (KubernetesClientException e) {
-            log.error("Échec du déploiement Kubernetes pour {}", saved.getName(), e);
-            saved.setStatus(DeploymentStatus.FAILED);
-            deploymentRepository.save(saved);
-            throw new KubernetesOperationException("Échec du déploiement sur le cluster: " + e.getMessage());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(saved.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.CREATE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
-        DeploymentResponse response = DeploymentResponse.from(saved);
+        logger.info("Deployment created and queued: " + saved);
+        saveRevisionSnapshot(saved);
+
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         return response;
     }
@@ -174,7 +162,8 @@ public class DeploymentServiceImpl implements IDeploymentService {
         String name = request.getName().trim();
         String namespace = request.getNamespace().trim();
         if (!deployment.getName().equals(name) || !deployment.getNamespace().equals(namespace)) {
-            throw new IllegalArgumentException("Le nom et le namespace ne peuvent pas �tre modifi�s apr�s la cr�ation du d�ploiement");
+            throw new IllegalArgumentException(
+                    "Le nom et le namespace ne peuvent pas Ãªtre modifiÃ©s aprÃ¨s la crÃ©ation du dÃ©ploiement");
         }
         ensureUnique(name, namespace, id);
 
@@ -199,24 +188,21 @@ public class DeploymentServiceImpl implements IDeploymentService {
                 request.getTlsSecretName());
         deployment.setStatus(DeploymentStatus.PENDING);
         Deployment saved = deploymentRepository.save(deployment);
-        deploymentStatusSynchronizer.resumeTracking(saved);
 
-        try {
-            kubernetesDeploymentService.updateSpec(saved);
-        } catch (KubernetesClientException e) {
-            log.error("Échec de la mise à jour Kubernetes pour {}", saved.getName(), e);
-            saved.setStatus(DeploymentStatus.FAILED);
-            deploymentRepository.save(saved);
-            throw new KubernetesOperationException("Échec de la mise à jour sur le cluster: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(saved.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.UPDATE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
-        DeploymentResponse response = DeploymentResponse.from(saved);
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         saveRevisionSnapshot(saved);
         return response;
     }
 
-    // In DeploymentServiceImpl
     @Transactional(readOnly = true)
     public String getAccessUrl(UUID id) {
         return kubernetesDeploymentService.getAccessUrl(getDeployment(id));
@@ -226,17 +212,17 @@ public class DeploymentServiceImpl implements IDeploymentService {
     public DeploymentResponse restart(UUID id) {
         Deployment deployment = getDeployment(id);
 
-        try {
-            kubernetesDeploymentService.restart(deployment);
-        } catch (KubernetesClientException e) {
-            log.error("Échec du redémarrage Kubernetes pour {}", deployment.getName(), e);
-            throw new KubernetesOperationException("Échec du redémarrage: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(deployment.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.RESTART)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
         deployment.setStatus(DeploymentStatus.PENDING);
         Deployment saved = deploymentRepository.save(deployment);
-        deploymentStatusSynchronizer.resumeTracking(saved);
-        DeploymentResponse response = DeploymentResponse.from(saved);
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         return response;
     }
@@ -245,15 +231,17 @@ public class DeploymentServiceImpl implements IDeploymentService {
     public DeploymentResponse stop(UUID id) {
         Deployment deployment = getDeployment(id);
 
-        try {
-            kubernetesDeploymentService.scale(deployment, 0);
-        } catch (KubernetesClientException e) {
-            log.error("Échec de l'arrêt Kubernetes pour {}", deployment.getName(), e);
-            throw new KubernetesOperationException("Échec de l'arrêt: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(deployment.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.SCALE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .targetReplicas(0)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
         deployment.setStatus(DeploymentStatus.STOPPED);
-        DeploymentResponse response = DeploymentResponse.from(deploymentRepository.save(deployment));
+        DeploymentResponse response = DeploymentResponse.from(deploymentRepository.save(deployment), job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         return response;
     }
@@ -262,18 +250,19 @@ public class DeploymentServiceImpl implements IDeploymentService {
     public DeploymentResponse scale(UUID id, Integer replicas) {
         Deployment deployment = getDeployment(id);
 
-        try {
-            kubernetesDeploymentService.scale(deployment, replicas);
-        } catch (KubernetesClientException e) {
-            log.error("Échec de la mise à l'échelle Kubernetes pour {}", deployment.getName(), e);
-            throw new KubernetesOperationException("Échec de la mise à l'échelle: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(deployment.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.SCALE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .targetReplicas(replicas)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
         deployment.setReplicas(replicas);
         deployment.setStatus(DeploymentStatus.PENDING);
         Deployment saved = deploymentRepository.save(deployment);
-        deploymentStatusSynchronizer.resumeTracking(saved);
-        DeploymentResponse response = DeploymentResponse.from(saved);
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         return response;
     }
@@ -281,7 +270,8 @@ public class DeploymentServiceImpl implements IDeploymentService {
     @Override
     public DeploymentResponse rollback(UUID id) {
         Deployment deployment = getDeployment(id);
-        List<DeploymentRevision> revisions = deploymentRevisionRepository.findByDeploymentIdOrderByRevisionNumberDesc(id);
+        List<DeploymentRevision> revisions = deploymentRevisionRepository
+                .findByDeploymentIdOrderByRevisionNumberDesc(id);
         if (revisions.size() < 2) {
             throw new IllegalStateException("Aucune revision precedente disponible pour le rollback");
         }
@@ -290,19 +280,17 @@ public class DeploymentServiceImpl implements IDeploymentService {
         applyRevision(deployment, target);
         deployment.setStatus(DeploymentStatus.PENDING);
         Deployment saved = deploymentRepository.save(deployment);
-        deploymentStatusSynchronizer.resumeTracking(saved);
 
-        try {
-            kubernetesDeploymentService.updateSpec(saved);
-        } catch (KubernetesClientException e) {
-            log.error("Échec du rollback Kubernetes pour {}", saved.getName(), e);
-            saved.setStatus(DeploymentStatus.FAILED);
-            deploymentRepository.save(saved);
-            throw new KubernetesOperationException("Échec du rollback: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(saved.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.UPDATE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
         saveRevisionSnapshot(saved);
-        DeploymentResponse response = DeploymentResponse.from(saved);
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
         deploymentEventService.publishDeploymentUpdated(response);
         return response;
     }
@@ -311,14 +299,23 @@ public class DeploymentServiceImpl implements IDeploymentService {
     public void delete(UUID id) {
         Deployment deployment = getDeployment(id);
 
-        try {
-            kubernetesDeploymentService.delete(deployment);
-        } catch (KubernetesClientException e) {
-            log.error("Échec de la suppression Kubernetes pour {}", deployment.getName(), e);
-            throw new KubernetesOperationException("Échec de la suppression sur le cluster: " + e.getMessage());
-        }
+        DeploymentJob job = DeploymentJob.builder()
+                .deploymentId(deployment.getId())
+                .operationType(org.example.Deployment.Enums.JobOperationType.DELETE)
+                .status(org.example.Deployment.Enums.JobStatus.QUEUED)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        deploymentJobRepository.save(job);
 
-        deploymentRepository.delete(deployment);
+        deployment.setStatus(DeploymentStatus.STOPPED);
+        deploymentRepository.save(deployment);
+    }
+
+    @Override
+    public DeploymentJobResponse getJobStatus(UUID jobId) {
+        DeploymentJob job = deploymentJobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job introuvable avec l'identifiant " + jobId));
+        return DeploymentJobResponse.from(job);
     }
 
     @Transactional(readOnly = true)
@@ -330,7 +327,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
     private Deployment getDeployment(UUID id) {
         return deploymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Déploiement introuvable avec l'identifiant " + id));
+                        "DÃ©ploiement introuvable avec l'identifiant " + id));
     }
 
     @Transactional(readOnly = true)
@@ -348,7 +345,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
                         name, namespace, excludedId);
         if (exists) {
             throw new DuplicateResourceException(
-                    "Un déploiement nommé " + name + " existe déjà dans le namespace " + namespace);
+                    "Un dÃ©ploiement nommÃ© " + name + " existe dÃ©jÃ  dans le namespace " + namespace);
         }
     }
 
@@ -379,6 +376,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
         deployment.setCpu(cpu.trim());
         deployment.setMemory(memory.trim());
         deployment.setEnvVariables(envVariables != null ? envVariables : Map.of());
+        validateSecretReferences(secretVariables);
         deployment.setSecretVariables(secretVariables != null ? secretVariables : Map.of());
         deployment.setGitRepository(gitRepository != null ? gitRepository.trim() : null);
         deployment.setGitBranch(gitBranch != null ? gitBranch.trim() : null);
@@ -388,7 +386,17 @@ public class DeploymentServiceImpl implements IDeploymentService {
         deployment.setRequestedPath(requestedPath != null ? requestedPath.trim() : null);
         deployment.setTlsEnabled(tlsEnabled != null ? tlsEnabled : Boolean.FALSE);
         deployment.setTlsSecretName(tlsSecretName != null ? tlsSecretName.trim() : null);
+    }
 
+    private void validateSecretReferences(Map<String, String> secretReferences) {
+        if (secretReferences == null)
+            return;
+        for (Map.Entry<String, String> entry : secretReferences.entrySet()) {
+            if (!entry.getKey().matches("[A-Za-z_][A-Za-z0-9_]*") || entry.getValue() == null
+                    || !entry.getValue().matches("[a-z0-9]([-a-z0-9]*[a-z0-9])?/[A-Za-z0-9._-]+")) {
+                throw new IllegalArgumentException("Les secrets doivent utiliser le format nom-du-secret/clÃ©.");
+            }
+        }
     }
 
     private void saveRevisionSnapshot(Deployment deployment) {
