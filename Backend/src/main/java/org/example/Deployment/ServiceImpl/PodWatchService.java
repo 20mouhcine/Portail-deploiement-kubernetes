@@ -24,6 +24,8 @@ public class PodWatchService {
     private final KubernetesClient kubernetesClient;
     private final IDeploymentEventService deploymentEventService;
     private final DeploymentLogService deploymentLogService;
+    private final KubernetesPodFailureDetector failureDetector;
+    private final DeploymentStatusSynchronizer deploymentStatusSynchronizer;
 
     @PostConstruct
     public void startWatch() {
@@ -59,17 +61,24 @@ public class PodWatchService {
         
         if (action == Watcher.Action.ADDED) {
             deploymentEventService.saveAndPublishLog(deploymentId, DeploymentEventLevel.INFO, DeploymentEventSource.KUBERNETES, "Pod scheduled: " + pod.getMetadata().getName());
-        } else if (action == Watcher.Action.MODIFIED) {
+        }
+
+        if (action == Watcher.Action.ADDED || action == Watcher.Action.MODIFIED) {
             List<ContainerStatus> statuses = pod.getStatus().getContainerStatuses();
-            if (statuses != null) {
+            var failure = failureDetector.detect(pod);
+            if (failure.isPresent()) {
+                deploymentEventService.saveAndPublishLog(
+                        deploymentId,
+                        DeploymentEventLevel.ERROR,
+                        DeploymentEventSource.KUBERNETES,
+                        "Erreur Kubernetes : " + failure.get().description());
+                deploymentStatusSynchronizer.markFailed(deploymentId);
+            } else if (statuses != null) {
                 for (ContainerStatus status : statuses) {
                     if (status.getState() != null) {
                         if (status.getState().getWaiting() != null) {
                             String reason = status.getState().getWaiting().getReason();
-                            String message = status.getState().getWaiting().getMessage();
-                            if ("ImagePullBackOff".equals(reason) || "ErrImagePull".equals(reason) || "CrashLoopBackOff".equals(reason) || "CreateContainerConfigError".equals(reason) || "CreateContainerError".equals(reason) || "InvalidImageName".equals(reason)) {
-                                deploymentEventService.saveAndPublishLog(deploymentId, DeploymentEventLevel.ERROR, DeploymentEventSource.KUBERNETES, "Error: " + reason + (message != null ? " - " + message : ""));
-                            } else if ("ContainerCreating".equals(reason)) {
+                            if ("ContainerCreating".equals(reason)) {
                                 deploymentEventService.saveAndPublishLog(deploymentId, DeploymentEventLevel.INFO, DeploymentEventSource.KUBERNETES, "Creating container...");
                             }
                         } else if (status.getState().getRunning() != null && Boolean.TRUE.equals(status.getReady())) {
@@ -79,7 +88,7 @@ public class PodWatchService {
                 }
             }
 
-            if ("Running".equals(phase)) {
+            if (failure.isEmpty() && "Running".equals(phase)) {
                 boolean allReady = true;
                 if (statuses != null) {
                     for (ContainerStatus status : statuses) {
@@ -94,8 +103,9 @@ public class PodWatchService {
                     deploymentEventService.saveAndPublishLog(deploymentId, DeploymentEventLevel.SUCCESS, DeploymentEventSource.KUBERNETES, "Pod is running and ready.");
                     deploymentLogService.startLogWatch(pod.getMetadata().getNamespace(), pod.getMetadata().getName(), deploymentId);
                 }
-            } else if ("Failed".equals(phase)) {
+            } else if (failure.isEmpty() && "Failed".equals(phase)) {
                 deploymentEventService.saveAndPublishLog(deploymentId, DeploymentEventLevel.ERROR, DeploymentEventSource.KUBERNETES, "Pod failed.");
+                deploymentStatusSynchronizer.markFailed(deploymentId);
                 deploymentLogService.stopLogWatch(pod.getMetadata().getName());
             }
         } else if (action == Watcher.Action.DELETED) {
