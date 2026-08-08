@@ -26,7 +26,9 @@ export interface ApiMessage {
 }
 
 export interface ApiError {
+  readonly code?: string;
   readonly message?: string;
+  readonly retryable?: boolean;
   readonly fieldErrors?: Readonly<Record<string, string>>;
 }
 

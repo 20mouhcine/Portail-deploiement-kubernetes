@@ -16,9 +16,9 @@ public interface UserService {
 
     UserResponse getByUsername(String username);
 
-    UserResponse setEnabled(UUID userId, boolean enabled);
+    UserResponse setEnabled(UUID userId, boolean enabled, String actingUsername);
 
-    UserResponse updateRoles(UUID userId, Set<RoleName> roles);
+    UserResponse updateRoles(UUID userId, Set<RoleName> roles, String actingUsername);
 
     void recordSuccessfulLogin(String username);
 }

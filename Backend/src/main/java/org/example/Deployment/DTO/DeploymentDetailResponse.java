@@ -8,6 +8,7 @@ import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Enums.DeploymentStatus;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,7 +75,7 @@ public class DeploymentDetailResponse {
                 .cpu(deployment.getCpu())
                 .memory(deployment.getMemory())
                 .accessUrl(deployment.getAccessUrl())
-                .configVariables(deployment.getEnvVariables())
+                .configVariables(new HashMap<>(deployment.getEnvVariables()))
                 .secretKeys(deployment.getSecretVariables().keySet().stream().sorted().toList())
                 .gitRepository(deployment.getGitRepository())
                 .gitBranch(deployment.getGitBranch())

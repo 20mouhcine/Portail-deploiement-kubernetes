@@ -11,11 +11,13 @@ import org.example.Deployment.Enums.DeploymentStatus;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Service.IDeploymentEventService;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@ConditionalOnProperty(name = "app.kubernetes.watchers.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class DeploymentWatchService {

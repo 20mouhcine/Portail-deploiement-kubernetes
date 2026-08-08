@@ -102,11 +102,17 @@ export class AuthService {
     }
 
     if (error.status === 0) {
-      return 'Le serveur est indisponible. Vérifiez que le backend est démarré.';
+      return 'Le backend est inaccessible. Vérifiez qu’il est démarré sur le port 8080.';
     }
 
     const apiError = error.error as ApiError | null;
-    return apiError?.message ?? 'La requête n’a pas pu être traitée.';
+    if (apiError?.fieldErrors && Object.keys(apiError.fieldErrors).length > 0) {
+      return Object.values(apiError.fieldErrors).join(' ');
+    }
+    if (error.status === 401) return 'Votre session a expiré. Reconnectez-vous.';
+    if (error.status === 403) return 'Vous n’avez pas les droits nécessaires pour cette action.';
+    const suffix = error.status === 503 && apiError?.retryable ? ' Réessayez dans quelques instants.' : '';
+    return (apiError?.message ?? 'La requête n’a pas pu être traitée.') + suffix;
   }
 
   private fetchCurrentUser(): Observable<CurrentUser> {

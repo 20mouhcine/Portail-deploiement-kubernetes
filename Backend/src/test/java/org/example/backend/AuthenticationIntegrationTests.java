@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -194,6 +196,30 @@ class AuthenticationIntegrationTests {
                 .andExpect(jsonPath("$.roles", containsInAnyOrder("DEVELOPER")))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void adminCannotDisableOwnAccount() throws Exception {
+        User admin = createUser("self-admin", "self-admin@example.com", "CorrectPassword123!", RoleName.ADMIN);
+        MockHttpSession session = authenticatedSession("self-admin", "CorrectPassword123!");
+
+        mockMvc.perform(patch("/api/admin/users/{id}/enabled", admin.getId())
+                        .session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_STATE"));
+    }
+
+    @Test
+    void lastActiveAdminCannotLoseAdminRole() throws Exception {
+        User admin = createUser("last-admin", "last-admin@example.com", "CorrectPassword123!", RoleName.ADMIN);
+        MockHttpSession session = authenticatedSession("last-admin", "CorrectPassword123!");
+
+        mockMvc.perform(put("/api/admin/users/{id}/roles", admin.getId())
+                        .session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\": [\"DEVELOPER\"]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_STATE"));
     }
 
     private org.springframework.test.web.servlet.ResultActions login(

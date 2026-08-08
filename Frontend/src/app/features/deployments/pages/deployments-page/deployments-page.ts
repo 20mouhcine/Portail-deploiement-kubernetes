@@ -34,6 +34,8 @@ export class DeploymentsPage {
   protected readonly logsDeployment = signal<Deployment | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly actionInProgress = signal(false);
+  protected readonly loading = this.service.loading;
+  protected readonly loadError = this.service.loadError;
   protected readonly activeOperations = signal<Set<string>>(new Set());
 
   protected readonly canCreate = computed(() => (this.user()?.roles.includes('DEVOPS') || this.user()?.roles.includes('ADMIN')) ?? false);
@@ -86,6 +88,7 @@ export class DeploymentsPage {
   protected openLogs(deployment: Deployment): void { this.logsDeployment.set(deployment); }
   protected closeLogs(): void { this.logsDeployment.set(null); }
   protected clearActionError(): void { this.actionError.set(null); }
+  protected reload(): void { this.service.refresh(); }
 
   protected save(value: DeploymentFormValue): void {
     const current = this.editingDeployment();
@@ -154,6 +157,7 @@ export class DeploymentsPage {
           newSet.delete(deployment.id);
           return newSet;
         });
+        this.actionError.set('Le suivi de l’opération a été interrompu. Réessayez.');
       }
     });
   }

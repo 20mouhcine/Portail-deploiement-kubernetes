@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.example.Deployment.Entity.DeploymentRevision;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class DeploymentRevisionResponse {
                 revision.getGitCommit(),
                 revision.getGitTag(),
                 revision.getCreatedAt(),
-                revision.getEnvVariables(),
+                new HashMap<>(revision.getEnvVariables()),
                 revision.getSecretVariables().keySet().stream().sorted().toList(),
                 revision.getRequestedHostname(),
                 revision.getRequestedPath(),

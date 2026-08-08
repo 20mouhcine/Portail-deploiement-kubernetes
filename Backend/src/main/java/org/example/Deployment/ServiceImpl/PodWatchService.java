@@ -12,11 +12,13 @@ import org.example.Deployment.Enums.DeploymentEventLevel;
 import org.example.Deployment.Enums.DeploymentEventSource;
 import org.example.Deployment.Service.IDeploymentEventService;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@ConditionalOnProperty(name = "app.kubernetes.watchers.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class PodWatchService {

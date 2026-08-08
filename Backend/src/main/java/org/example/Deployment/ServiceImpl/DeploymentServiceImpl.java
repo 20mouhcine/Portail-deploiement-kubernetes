@@ -15,12 +15,14 @@ import org.example.Deployment.Service.IDeploymentService;
 import org.example.Deployment.Service.IKubernetesDeploymentService;
 import org.example.Projects.Entity.Project;
 import org.example.Projects.Repository.ProjectRepository;
+import org.example.Projects.Security.ProjectAccessService;
 import org.example.auth.entity.User;
 import org.example.auth.exception.DuplicateResourceException;
 import org.example.auth.exception.ResourceNotFoundException;
 import org.example.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,12 +44,14 @@ public class DeploymentServiceImpl implements IDeploymentService {
     private final DeploymentStatusSynchronizer deploymentStatusSynchronizer;
     private final IDeploymentEventService deploymentEventService;
     private final DeploymentJobRepository deploymentJobRepository;
+    private final ProjectAccessService projectAccessService;
 
     @Override
     @Transactional(readOnly = true)
-    public List<DeploymentResponse> findAll() {
-        return deploymentRepository.findAllByOrderByCreatedAtDesc()
+    public List<DeploymentResponse> findAll(Authentication authentication) {
+        return deploymentRepository.findAllWithProjectByOrderByCreatedAtDesc()
                 .stream()
+                .filter(deployment -> projectAccessService.canRead(deployment.getProject(), authentication))
                 .map(DeploymentResponse::from)
                 .toList();
     }
@@ -148,7 +152,8 @@ public class DeploymentServiceImpl implements IDeploymentService {
                 .build();
         deploymentJobRepository.save(job);
 
-        logger.info("Deployment created and queued: " + saved);
+        logger.info(() -> "Deployment queued: id=" + saved.getId() + ", namespace=" + saved.getNamespace()
+                + ", name=" + saved.getName() + ", jobId=" + job.getId());
         saveRevisionSnapshot(saved);
 
         DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
@@ -296,7 +301,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
     }
 
     @Override
-    public void delete(UUID id) {
+    public DeploymentResponse delete(UUID id) {
         Deployment deployment = getDeployment(id);
 
         DeploymentJob job = DeploymentJob.builder()
@@ -308,7 +313,10 @@ public class DeploymentServiceImpl implements IDeploymentService {
         deploymentJobRepository.save(job);
 
         deployment.setStatus(DeploymentStatus.STOPPED);
-        deploymentRepository.save(deployment);
+        Deployment saved = deploymentRepository.save(deployment);
+        DeploymentResponse response = DeploymentResponse.from(saved, job.getId());
+        deploymentEventService.publishDeploymentUpdated(response);
+        return response;
     }
 
     @Override
@@ -375,7 +383,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
         deployment.setPort(port);
         deployment.setCpu(cpu.trim());
         deployment.setMemory(memory.trim());
-        deployment.setEnvVariables(envVariables != null ? envVariables : Map.of());
+        deployment.setEnvVariables(validateEnvironmentVariables(envVariables));
         validateSecretReferences(secretVariables);
         deployment.setSecretVariables(secretVariables != null ? secretVariables : Map.of());
         deployment.setGitRepository(gitRepository != null ? gitRepository.trim() : null);
@@ -397,6 +405,23 @@ public class DeploymentServiceImpl implements IDeploymentService {
                 throw new IllegalArgumentException("Les secrets doivent utiliser le format nom-du-secret/clÃ©.");
             }
         }
+    }
+
+    private Map<String, String> validateEnvironmentVariables(Map<String, String> variables) {
+        if (variables == null) {
+            return Map.of();
+        }
+        Map<String, String> validated = new HashMap<>();
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            if (entry.getKey() == null || !entry.getKey().matches("[A-Za-z_][A-Za-z0-9_]*")) {
+                throw new IllegalArgumentException("Le nom d'une variable d'environnement est invalide.");
+            }
+            if (entry.getValue() == null || entry.getValue().length() > 4096) {
+                throw new IllegalArgumentException("La valeur d'une variable d'environnement est invalide ou trop longue.");
+            }
+            validated.put(entry.getKey(), entry.getValue());
+        }
+        return validated;
     }
 
     private void saveRevisionSnapshot(Deployment deployment) {

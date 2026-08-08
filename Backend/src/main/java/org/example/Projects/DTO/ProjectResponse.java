@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.example.Projects.Entity.Project;
 
 import java.util.UUID;
+import java.util.Set;
 
 /**
  * @author pc
@@ -27,6 +28,14 @@ public class ProjectResponse {
 
     private String repository;
 
+    private Set<String> allowedNamespaces;
+    private Set<String> allowedUsers;
+    private String environmentType;
+    private String deploymentPolicy;
+    private String cpuQuota;
+    private String memoryQuota;
+    private Integer podQuota;
+
 
     public static ProjectResponse from(Project project) {
         return new ProjectResponse(
@@ -35,7 +44,14 @@ public class ProjectResponse {
                 project.getOwner() != null ? project.getOwner().getUsername() : null,
                 project.getName(),
                 project.getDescription(),
-                project.getRepository()
+                project.getRepository(),
+                Set.copyOf(project.getAllowedNamespaces()),
+                project.getAllowedUsers().stream().map(user -> user.getUsername()).collect(java.util.stream.Collectors.toUnmodifiableSet()),
+                project.getEnvironmentType(),
+                project.getDeploymentPolicy(),
+                project.getCpuQuota(),
+                project.getMemoryQuota(),
+                project.getPodQuota()
         );
     }
 }

@@ -2,6 +2,7 @@ package org.example.Deployment.Repository;
 
 import org.example.Deployment.Entity.Deployment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +23,10 @@ public interface DeploymentRepository extends JpaRepository<Deployment, UUID> {
     );
 
     Optional<Deployment> findByNameIgnoreCaseAndNamespaceIgnoreCase(String name, String namespace);
+
+    @EntityGraph(attributePaths = {"project", "project.owner", "project.allowedUsers", "project.allowedNamespaces"})
+    Optional<Deployment> findWithProjectAccessById(UUID id);
+
+    @EntityGraph(attributePaths = {"project", "project.owner", "project.allowedUsers", "project.allowedNamespaces"})
+    List<Deployment> findAllWithProjectByOrderByCreatedAtDesc();
 }

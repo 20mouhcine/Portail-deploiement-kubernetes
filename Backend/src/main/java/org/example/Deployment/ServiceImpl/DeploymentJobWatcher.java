@@ -5,23 +5,38 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Deployment.Entity.DeploymentJob;
 import org.example.Deployment.Enums.JobStatus;
 import org.example.Deployment.Repository.DeploymentJobRepository;
+import org.example.Deployment.Repository.DeploymentRepository;
+import org.example.Deployment.Enums.DeploymentStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.Duration;
 
 @Service
+@ConditionalOnProperty(name = "app.deployment.jobs.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @RequiredArgsConstructor
 public class DeploymentJobWatcher {
 
     private final DeploymentJobRepository jobRepository;
+    private final DeploymentRepository deploymentRepository;
+    private final DeploymentJobClaimService claimService;
+
+    @Value("${app.deployment.jobs.max-retries:3}")
+    private int maxRetries;
+
+    @Value("${app.deployment.jobs.stale-after:5m}")
+    private Duration staleAfter;
 
     @Scheduled(fixedDelay = 60000) // Check every minute
     @Transactional
     public void watchRollingOutJobs() {
+        claimService.recoverStaleApplying(LocalDateTime.now().minus(staleAfter), maxRetries);
         List<DeploymentJob> rollingOutJobs = jobRepository.findByStatus(JobStatus.ROLLING_OUT);
         
         for (DeploymentJob job : rollingOutJobs) {
@@ -31,6 +46,10 @@ public class DeploymentJobWatcher {
                 job.setStatus(JobStatus.FAILED);
                 job.setErrorMessage("Operation timed out waiting for Kubernetes rollout.");
                 jobRepository.save(job);
+                deploymentRepository.findById(job.getDeploymentId()).ifPresent(deployment -> {
+                    deployment.setStatus(DeploymentStatus.FAILED);
+                    deploymentRepository.save(deployment);
+                });
             }
         }
     }

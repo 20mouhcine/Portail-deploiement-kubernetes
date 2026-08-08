@@ -1,6 +1,7 @@
 package org.example.Projects.Controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.example.History.Enums.ActionType;
 import org.example.History.Enums.TargetType;
@@ -33,22 +34,22 @@ public class ProjectController {
     private final IActionHistoryService historyService;
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> getApplications() {
+    public ResponseEntity<List<ProjectResponse>> getApplications(Authentication authentication) {
         return ResponseEntity.ok(
-                ApiResponse.success("Applications retrieved successfully.", projectService.getApplications()).getData()
+                ApiResponse.success("Applications retrieved successfully.", projectService.getApplications(authentication)).getData()
         );
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','DEVELOPER')")
     public ResponseEntity<ApiResponse<ProjectResponse>> createApplication(
-             @RequestBody CreateProjectRequest request,
+             @Valid @RequestBody CreateProjectRequest request,
              Authentication authentication,
              HttpServletRequest httpRequest
     ) {
 
         ProjectResponse response =
-                projectService.createApplication(request);
+                projectService.createApplication(request, authentication);
         record(ActionType.CREATE, "Création du projet", response.getName(), authentication, httpRequest);
 
         return ResponseEntity
@@ -56,9 +57,10 @@ public class ProjectController {
                 .body(ApiResponse.success("Application created successfully.",response));
     }
     @PutMapping("/{id}")
+    @PreAuthorize("@projectAccess.canManage(#id, authentication)")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateApplication(
             @PathVariable UUID id,
-             @RequestBody UpdateProjectRequest request,
+             @Valid @RequestBody UpdateProjectRequest request,
              Authentication authentication,
              HttpServletRequest httpRequest
     ) {
@@ -75,6 +77,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("@projectAccess.canManage(#id, authentication)")
     public ResponseEntity<ApiResponse<Void>> deleteApplication(
             @PathVariable UUID id,
             Authentication authentication,

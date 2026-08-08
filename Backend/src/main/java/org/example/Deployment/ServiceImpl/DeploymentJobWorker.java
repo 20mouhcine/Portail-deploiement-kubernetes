@@ -1,104 +1,116 @@
 package org.example.Deployment.ServiceImpl;
 
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Entity.DeploymentJob;
 import org.example.Deployment.Enums.DeploymentStatus;
-import org.example.Deployment.Enums.JobOperationType;
 import org.example.Deployment.Enums.JobStatus;
 import org.example.Deployment.Repository.DeploymentJobRepository;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Service.IKubernetesDeploymentService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.UUID;
 
 @Service
+@ConditionalOnProperty(name = "app.deployment.jobs.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @RequiredArgsConstructor
 public class DeploymentJobWorker {
-
     private final DeploymentJobRepository jobRepository;
     private final DeploymentRepository deploymentRepository;
     private final IKubernetesDeploymentService kubernetesDeploymentService;
     private final DeploymentStatusSynchronizer statusSynchronizer;
+    private final DeploymentJobClaimService claimService;
 
-    @Scheduled(fixedDelay = 5000)
-    @Transactional
+    @Value("${app.deployment.jobs.max-retries:3}")
+    private int maxRetries;
+
+    @Scheduled(fixedDelayString = "${app.deployment.jobs.poll-ms:5000}")
     public void processQueuedJobs() {
-        List<DeploymentJob> queuedJobs = jobRepository.findByStatus(JobStatus.QUEUED);
-        for (DeploymentJob job : queuedJobs) {
-            // Simple backoff: retryCount * 10 seconds
-            if (job.getRetryCount() > 0 && job.getUpdatedAt() != null) {
-                if (job.getUpdatedAt().plusSeconds(job.getRetryCount() * 10L).isAfter(LocalDateTime.now())) {
-                    continue; // skip until backoff is over
-                }
-            }
-
-            job.setStatus(JobStatus.APPLYING);
-            jobRepository.saveAndFlush(job);
-            
-            try {
-                Deployment deployment = deploymentRepository.findById(job.getDeploymentId())
-                        .orElseThrow(() -> new IllegalStateException("Deployment not found"));
-
-                switch (job.getOperationType()) {
-                    case CREATE:
-                        String url = kubernetesDeploymentService.deploy(deployment);
-                        deployment.setAccessUrl(url);
-                        deploymentRepository.save(deployment);
-                        job.setStatus(JobStatus.ROLLING_OUT);
-                        break;
-                    case UPDATE:
-                        kubernetesDeploymentService.updateSpec(deployment);
-                        job.setStatus(JobStatus.ROLLING_OUT);
-                        break;
-                    case SCALE:
-                        kubernetesDeploymentService.scale(deployment, job.getTargetReplicas() != null ? job.getTargetReplicas() : deployment.getReplicas());
-                        deployment.setReplicas(job.getTargetReplicas() != null ? job.getTargetReplicas() : deployment.getReplicas());
-                        deployment.setStatus(job.getTargetReplicas() == 0 ? DeploymentStatus.STOPPED : DeploymentStatus.PENDING);
-                        deploymentRepository.save(deployment);
-                        job.setStatus(JobStatus.READY);
-                        break;
-                    case RESTART:
-                        kubernetesDeploymentService.restart(deployment);
-                        job.setStatus(JobStatus.ROLLING_OUT);
-                        break;
-                    case DELETE:
-                        kubernetesDeploymentService.delete(deployment);
-                        deploymentRepository.delete(deployment);
-                        job.setStatus(JobStatus.READY);
-                        break;
-                }
-                job.setErrorMessage(null);
-                
-                if (job.getStatus() == JobStatus.ROLLING_OUT) {
-                    statusSynchronizer.resumeTracking(deployment);
-                }
-                
-            } catch (Exception e) {
-                log.error("Job {} failed: {}", job.getId(), e.getMessage());
-                job.setRetryCount(job.getRetryCount() + 1);
-                job.setErrorMessage(e.getMessage());
-                if (job.getRetryCount() >= 3) {
-                    job.setStatus(JobStatus.FAILED);
-                    updateDeploymentStatusToFailed(job.getDeploymentId());
-                } else {
-                    job.setStatus(JobStatus.QUEUED);
-                }
-            }
-            jobRepository.save(job);
+        for (int processed = 0; processed < 10; processed++) {
+            var jobId = claimService.claimNext();
+            if (jobId.isEmpty()) return;
+            process(jobId.get());
         }
     }
 
-    private void updateDeploymentStatusToFailed(java.util.UUID deploymentId) {
-        deploymentRepository.findById(deploymentId).ifPresent(d -> {
-            d.setStatus(DeploymentStatus.FAILED);
-            deploymentRepository.save(d);
-        });
+    void process(UUID jobId) {
+        DeploymentJob job = jobRepository.findById(jobId).orElse(null);
+        if (job == null || job.getStatus() != JobStatus.APPLYING) return;
+        try {
+            Deployment deployment = deploymentRepository.findById(job.getDeploymentId())
+                    .orElseThrow(() -> new IllegalStateException("Déploiement introuvable"));
+            switch (job.getOperationType()) {
+                case CREATE -> {
+                    deployment.setAccessUrl(kubernetesDeploymentService.deploy(deployment));
+                    deploymentRepository.save(deployment);
+                    job.setStatus(JobStatus.ROLLING_OUT);
+                }
+                case UPDATE -> {
+                    kubernetesDeploymentService.updateSpec(deployment);
+                    job.setStatus(JobStatus.ROLLING_OUT);
+                }
+                case SCALE -> {
+                    int replicas = job.getTargetReplicas() == null ? deployment.getReplicas() : job.getTargetReplicas();
+                    kubernetesDeploymentService.scale(deployment, replicas);
+                    deployment.setReplicas(replicas);
+                    deployment.setStatus(replicas == 0 ? DeploymentStatus.STOPPED : DeploymentStatus.PENDING);
+                    deploymentRepository.save(deployment);
+                    job.setStatus(JobStatus.READY);
+                }
+                case RESTART -> {
+                    kubernetesDeploymentService.restart(deployment);
+                    job.setStatus(JobStatus.ROLLING_OUT);
+                }
+                case DELETE -> {
+                    kubernetesDeploymentService.delete(deployment);
+                    deploymentRepository.delete(deployment);
+                    job.setStatus(JobStatus.READY);
+                }
+            }
+            job.setErrorMessage(null);
+            job.setNextAttemptAt(null);
+            if (job.getStatus() == JobStatus.ROLLING_OUT) statusSynchronizer.resumeTracking(deployment);
+        } catch (Exception exception) {
+            log.error("Deployment job {} failed", job.getId(), exception);
+            int retries = job.getRetryCount() + 1;
+            job.setRetryCount(retries);
+            job.setErrorMessage(safeMessage(exception));
+            job.setStartedAt(null);
+            if (!retryable(exception) || retries >= maxRetries) {
+                job.setStatus(JobStatus.FAILED);
+                deploymentRepository.findById(job.getDeploymentId()).ifPresent(deployment -> {
+                    deployment.setStatus(DeploymentStatus.FAILED);
+                    deploymentRepository.save(deployment);
+                });
+            } else {
+                job.setStatus(JobStatus.QUEUED);
+                job.setNextAttemptAt(LocalDateTime.now().plusSeconds(10L * (1L << Math.min(retries - 1, 5))));
+            }
+        }
+        jobRepository.save(job);
+    }
+
+    private boolean retryable(Exception exception) {
+        if (exception instanceof IllegalArgumentException || exception instanceof IllegalStateException) return false;
+        if (exception instanceof KubernetesClientException kubernetes) {
+            int code = kubernetes.getCode();
+            return code <= 0 || code == 408 || code == 429 || code >= 500;
+        }
+        return true;
+    }
+
+    private String safeMessage(Exception exception) {
+        if (exception instanceof IllegalArgumentException || exception instanceof IllegalStateException) {
+            return exception.getMessage();
+        }
+        return "L'opération Kubernetes n'a pas pu être terminée";
     }
 }

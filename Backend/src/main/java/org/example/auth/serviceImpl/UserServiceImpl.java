@@ -12,6 +12,7 @@ import org.example.auth.repository.UserRepository;
 import org.example.auth.service.RoleService;
 import org.example.auth.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
+    private final SessionRegistry sessionRegistry;
 
     @Override
     public UserResponse createUser(CreateUserRequest request) {
@@ -57,16 +59,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse setEnabled(UUID userId, boolean enabled) {
+    public UserResponse setEnabled(UUID userId, boolean enabled, String actingUsername) {
         User user = findById(userId);
+        if (!enabled && user.getUsername().equalsIgnoreCase(actingUsername)) {
+            throw new IllegalStateException("Vous ne pouvez pas désactiver votre propre compte");
+        }
+        if (!enabled && isAdmin(user) && userRepository.countByEnabledTrueAndRoles_Name(RoleName.ADMIN) <= 1) {
+            throw new IllegalStateException("Le dernier administrateur actif ne peut pas être désactivé");
+        }
         user.setEnabled(enabled);
+        if (!enabled) expireSessions(user.getUsername());
         return toResponse(user);
     }
 
     @Override
-    public UserResponse updateRoles(UUID userId, Set<RoleName> roles) {
+    public UserResponse updateRoles(UUID userId, Set<RoleName> roles, String actingUsername) {
         User user = findById(userId);
+        if (isAdmin(user) && !roles.contains(RoleName.ADMIN)
+                && userRepository.countByEnabledTrueAndRoles_Name(RoleName.ADMIN) <= 1) {
+            throw new IllegalStateException("Le rôle du dernier administrateur actif ne peut pas être retiré");
+        }
         user.replaceRoles(roleService.getByNames(roles));
+        if (!roles.contains(RoleName.ADMIN) || user.getUsername().equalsIgnoreCase(actingUsername)) {
+            expireSessions(user.getUsername());
+        }
         return toResponse(user);
     }
 
@@ -100,6 +116,18 @@ public class UserServiceImpl implements UserService {
 
     private String normalize(String value) {
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ADMIN);
+    }
+
+    private void expireSessions(String username) {
+        sessionRegistry.getAllPrincipals().stream()
+                .filter(principal -> principal instanceof org.springframework.security.core.userdetails.UserDetails details
+                        && details.getUsername().equalsIgnoreCase(username))
+                .forEach(principal -> sessionRegistry.getAllSessions(principal, false)
+                        .forEach(session -> session.expireNow()));
     }
 
     private UserResponse toResponse(User user) {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DeploymentSseService } from '../../../../core/deployments/services/deployment-sse.service';
 import { DeploymentEvent } from '../../../../core/deployments/models/deployment-event.model';
@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
   
 })
 export class DeploymentLogsModalComponent implements OnInit, OnDestroy {
+  private readonly sseService = inject(DeploymentSseService);
   @Input() deploymentId!: string;
   @Input() deploymentName!: string;
   @Output() close = new EventEmitter<void>();
@@ -20,10 +21,9 @@ export class DeploymentLogsModalComponent implements OnInit, OnDestroy {
   @ViewChild('logsContainer') private logsContainer!: ElementRef;
 
   logs = signal<DeploymentEvent[]>([]);
+  protected readonly connectionState = this.sseService.connectionState;
   private sseSubscription?: Subscription;
   private autoScroll = true;
-
-  constructor(private sseService: DeploymentSseService) {}
 
   ngOnInit(): void {
     this.sseSubscription = this.sseService.subscribeToDeploymentLogs(this.deploymentId).subscribe({

@@ -53,6 +53,9 @@
   font-family: monospace;
 }
 
+.connection-state { color: #34d399; font-size: 0.75rem; }
+.connection-state.reconnecting { color: #fbbf24; }
+
 .close-button {
   background: transparent;
   border: none;

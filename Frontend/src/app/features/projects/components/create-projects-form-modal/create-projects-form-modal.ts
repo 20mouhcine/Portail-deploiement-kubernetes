@@ -14,12 +14,14 @@ import { inject } from '@angular/core';
 export class CreateProjectsFormModal {
   readonly open = input(false);
   readonly mode = input<'create' | 'edit'>('create');
-  readonly userId = inject(AuthService).user()!.id;
+  readonly userId = inject(AuthService).user()?.id ?? '';
   readonly value = input<ProjectFormValue>({
     owner_id: this.userId,
     name: '',
     description: '',
     repository: '',
+    allowedNamespaces: ['default'],
+    allowedUsers: [],
   });
 
 
@@ -43,6 +45,8 @@ export class CreateProjectsFormModal {
       nonNullable: true,
       validators: [Validators.required],
     }),
+    allowedNamespaces: new FormControl('default', { nonNullable: true, validators: [Validators.required] }),
+    allowedUsers: new FormControl('', { nonNullable: true }),
   });
 
   constructor() {
@@ -51,7 +55,12 @@ export class CreateProjectsFormModal {
         return;
       }
 
-      this.form.reset(this.value());
+      const value = this.value();
+      this.form.reset({
+        ...value,
+        allowedNamespaces: (value.allowedNamespaces ?? ['default']).join(', '),
+        allowedUsers: (value.allowedUsers ?? []).join(', '),
+      });
     });
   }
 
@@ -65,7 +74,15 @@ export class CreateProjectsFormModal {
       this.form.markAllAsTouched();
       return;
     }
-    console.log("Form value :", this.form.getRawValue());
-    this.submitted.emit(this.form.getRawValue());
+    const raw = this.form.getRawValue();
+    this.submitted.emit({
+      ...raw,
+      allowedNamespaces: this.toList(raw.allowedNamespaces),
+      allowedUsers: this.toList(raw.allowedUsers),
+    });
+  }
+
+  private toList(value: string): string[] {
+    return [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
   }
 }

@@ -33,11 +33,12 @@ public class DeploymentController {
     private final IActionHistoryService historyService;
 
     @GetMapping
-    public ResponseEntity<List<DeploymentResponse>> findAll() {
-        return ResponseEntity.ok(deploymentService.findAll());
+    public ResponseEntity<List<DeploymentResponse>> findAll(Authentication authentication) {
+        return ResponseEntity.ok(deploymentService.findAll(authentication));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@projectAccess.canReadDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Déploiement récupéré avec succès",
@@ -46,6 +47,7 @@ public class DeploymentController {
     }
 
         @GetMapping("/{id}/details")
+        @PreAuthorize("@projectAccess.canReadDeployment(#id, authentication)")
         public ResponseEntity<ApiResponse<DeploymentDetailResponse>> details(@PathVariable UUID id) {
                 return ResponseEntity.ok(ApiResponse.success(
                                 "Détail du déploiement récupéré avec succès",
@@ -54,6 +56,7 @@ public class DeploymentController {
         }
 
     @GetMapping("/operations/{operationId}")
+    @PreAuthorize("@projectAccess.canReadOperation(#operationId, authentication)")
     public ResponseEntity<ApiResponse<DeploymentJobResponse>> getOperationStatus(@PathVariable UUID operationId) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Statut de l'opération récupéré avec succès",
@@ -62,7 +65,7 @@ public class DeploymentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('DEVOPS','ADMIN')")
+    @PreAuthorize("@projectAccess.canDeploy(#request.projectId, #request.namespace, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> create(
             @Valid @RequestBody CreateDeploymentRequest request,
             Authentication authentication,
@@ -83,7 +86,7 @@ public class DeploymentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateDeploymentRequest request,
@@ -99,7 +102,7 @@ public class DeploymentController {
     }
 
     @PatchMapping("/{id}/restart")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> restart(
             @PathVariable UUID id,
             Authentication authentication,
@@ -114,7 +117,7 @@ public class DeploymentController {
     }
 
     @PatchMapping("/{id}/stop")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> stop(
             @PathVariable UUID id,
             Authentication authentication,
@@ -129,7 +132,7 @@ public class DeploymentController {
     }
 
     @PatchMapping("/{id}/scale")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> scale(
             @PathVariable UUID id,
             @Valid @RequestBody ScaleDeploymentRequest request,
@@ -151,7 +154,7 @@ public class DeploymentController {
     }
 
     @PostMapping("/{id}/rollback")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<DeploymentResponse>> rollback(
             @PathVariable UUID id,
             Authentication authentication,
@@ -166,22 +169,22 @@ public class DeploymentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DEVOPS')")
-    public ResponseEntity<ApiResponse<Void>> delete(
+    @PreAuthorize("@projectAccess.canOperateDeployment(#id, authentication)")
+    public ResponseEntity<ApiResponse<DeploymentResponse>> delete(
             @PathVariable UUID id,
             Authentication authentication,
             HttpServletRequest httpRequest
     ) {
-        DeploymentResponse deployment = deploymentService.findById(id);
-        deploymentService.delete(id);
+        DeploymentResponse deployment = deploymentService.delete(id);
         record(ActionType.DELETE, "Suppression du déploiement", deployment, authentication, httpRequest);
         return ResponseEntity.ok(ApiResponse.success(
                 "Déploiement supprimé avec succès",
-                null
+                deployment
         ));
     }
 
     @GetMapping("/{id}/logs")
+    @PreAuthorize("@projectAccess.canReadDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<String>> logs(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Logs récupérés avec succès",
@@ -190,6 +193,7 @@ public class DeploymentController {
     }
 
     @GetMapping("/{id}/pods")
+    @PreAuthorize("@projectAccess.canReadDeployment(#id, authentication)")
     public ResponseEntity<ApiResponse<List<PodResponse>>> pods(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Pods récupérés avec succès",

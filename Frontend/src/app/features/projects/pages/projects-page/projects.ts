@@ -5,6 +5,7 @@ import Project, { ProjectFormValue } from '../../../../core/projects/models/proj
 import { CreateProjectsFormModal } from '../../components/create-projects-form-modal/create-projects-form-modal';
 import { ActionsPopover } from '../../components/actions-popover/actions-popover';
 import { ConfirmDeleteModal } from '../../components/confirm-delete-modal/confirm-delete-modal';
+import { finalize, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-apps',
@@ -23,6 +24,9 @@ export class Projects implements OnInit {
 
 
   protected readonly projects = signal<Project[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly actionInProgress = signal(false);
+  protected readonly actionError = signal<string | null>(null);
   protected readonly searchTerm = signal('');
   protected readonly viewMode = signal<'cards' | 'list'>('cards');
   protected readonly hasAccess = computed(() => (this.user()?.roles.includes('ADMIN') || this.user()?.roles.includes("DEVELOPER")) ?? false);
@@ -51,14 +55,18 @@ export class Projects implements OnInit {
         name: project.name,
         description: project.description || '',
         repository: project.repository,
-        owner_id: project.ownerId ?? this.user()!.id
+        owner_id: project.ownerId ?? this.user()?.id ?? '',
+        allowedNamespaces: project.allowedNamespaces ?? ['default'],
+        allowedUsers: project.allowedUsers ?? [],
       };
     }
     return {
-      owner_id: this.user()!.id,
+      owner_id: this.user()?.id ?? '',
       name: '',
       description: '',
-      repository: ''
+      repository: '',
+      allowedNamespaces: ['default'],
+      allowedUsers: [],
     };
   });
 
@@ -67,7 +75,15 @@ export class Projects implements OnInit {
   }
 
   refresh() {
-    this.service.loadProjects().subscribe(projects => this.projects.set(projects));
+    this.loading.set(true);
+    this.actionError.set(null);
+    this.service.loadProjects().pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: projects => this.projects.set(projects),
+      error: error => {
+        this.projects.set([]);
+        this.actionError.set(this.auth.errorMessage(error));
+      },
+    });
 
   }
 
@@ -86,35 +102,12 @@ export class Projects implements OnInit {
   }
 
   saveProject(project: ProjectFormValue) {
-    console.log('[projects.ts] saveProject called with:', project);
-    console.log('[projects.ts] current modalMode:', this.modalMode());
-
     if (this.modalMode() === 'create') {
-      console.log('[projects.ts] Sending create request');
-      this.service.create(project).subscribe({
-        next: () => {
-          this.showForm.set(false);
-          this.refresh();
-        },
-        error: (err) => console.error('Create error:', err)
-      });
+      this.runAction(this.service.create(project), () => this.cancel());
     } else {
       const current = this.editingProject();
-      console.log('[projects.ts] current editingProject:', current);
-
       if (current) {
-        console.log('[projects.ts] Calling this.service.update for id:', current.id);
-        this.service.update({ ...project, id: current.id }).subscribe({
-          next: () => {
-            console.log('[projects.ts] Update request succeeded!');
-            this.showForm.set(false);
-            this.editingProject.set(null);
-            this.refresh();
-          },
-          error: (err) => console.error('[projects.ts] Update error:', err)
-        });
-      } else {
-        console.error('[projects.ts] ERROR: modalMode is edit, but editingProject is null!');
+        this.runAction(this.service.update({ ...project, id: current.id }), () => this.cancel());
       }
     }
   }
@@ -144,19 +137,21 @@ export class Projects implements OnInit {
   confirmDelete(): void {
     const project = this.projectToDelete();
     if (project) {
-      this.service.delete(project.id).subscribe({
-        next: () => {
-          this.showConfirmDelete.set(false);
-          this.projectToDelete.set(null);
-          this.refresh();
-        },
-        error: (err) => {
-          console.error('Delete error:', err);
-          this.showConfirmDelete.set(false);
-          this.projectToDelete.set(null);
-        }
-      });
+      this.runAction(this.service.delete(project.id), () => this.cancelDelete());
     }
+  }
+
+  private runAction(operation: Observable<unknown>, onSuccess: () => void): void {
+    if (this.actionInProgress()) return;
+    this.actionError.set(null);
+    this.actionInProgress.set(true);
+    operation.pipe(finalize(() => this.actionInProgress.set(false))).subscribe({
+      next: () => {
+        onSuccess();
+        this.refresh();
+      },
+      error: error => this.actionError.set(this.auth.errorMessage(error)),
+    });
   }
 }
 

@@ -5,6 +5,7 @@ import org.example.Projects.DTO.CreateProjectRequest;
 import org.example.Projects.DTO.UpdateProjectRequest;
 import org.example.Projects.Entity.Project;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,12 +15,12 @@ import java.util.UUID;
  **/
 @Service
 public interface IProjectService {
-    List<ProjectResponse> getApplications();
+    List<ProjectResponse> getApplications(Authentication authentication);
     Project getApplicationByName(String name);
     Project getApplicationById(UUID id);
-    ProjectResponse createApplication(CreateProjectRequest request);
+    ProjectResponse createApplication(CreateProjectRequest request, Authentication authentication);
 
     void deleteApplicationById(UUID id);
 
-    ProjectResponse update(UUID id,UpdateProjectRequest request);
+    ProjectResponse update(UUID id, UpdateProjectRequest request);
 }

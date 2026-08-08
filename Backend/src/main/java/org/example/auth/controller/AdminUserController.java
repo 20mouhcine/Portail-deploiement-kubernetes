@@ -59,7 +59,7 @@ public class AdminUserController {
             @Valid @RequestBody UpdateUserStatusRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
-        UserResponse user = userService.setEnabled(userId, request.enabled());
+        UserResponse user = userService.setEnabled(userId, request.enabled(), authentication.getName());
         record(
                 ActionType.UPDATE,
                 request.enabled() ? "Activation de l'utilisateur" : "Désactivation de l'utilisateur",
@@ -76,7 +76,7 @@ public class AdminUserController {
             @Valid @RequestBody UpdateUserRolesRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
-        UserResponse user = userService.updateRoles(userId, request.roles());
+        UserResponse user = userService.updateRoles(userId, request.roles(), authentication.getName());
         record(ActionType.UPDATE, "Modification des rôles utilisateur", user.username(), authentication, httpRequest);
         return user;
     }

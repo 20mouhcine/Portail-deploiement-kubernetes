@@ -4,6 +4,9 @@
       <div class="header-title">
         <h3>Deployment Logs</h3>
         <span class="deployment-name">{{ deploymentName }}</span>
+        <span class="connection-state" [class.reconnecting]="connectionState() === 'reconnecting'">
+          {{ connectionState() === 'connected' ? 'En direct' : connectionState() === 'reconnecting' ? 'Reconnexion…' : 'Connexion…' }}
+        </span>
       </div>
       <button class="close-button" (click)="closeModal()">✕</button>
     </div>

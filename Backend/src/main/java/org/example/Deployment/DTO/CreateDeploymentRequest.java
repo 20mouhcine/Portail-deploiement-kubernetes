@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,11 +22,13 @@ public class CreateDeploymentRequest {
     private UUID projectId;
 
     @NotBlank(message = "Le nom est obligatoire")
-    @Size(max = 100, message = "Le nom ne doit pas dépasser 100 caractères")
+    @Size(max = 63, message = "Le nom ne doit pas dépasser 63 caractères")
+    @Pattern(regexp = "[a-z0-9]([-a-z0-9]*[a-z0-9])?", message = "Le nom doit être un nom DNS Kubernetes valide")
     private String name;
 
     @NotBlank(message = "Le namespace est obligatoire")
     @Size(max = 63, message = "Le namespace ne doit pas dépasser 63 caractères")
+    @Pattern(regexp = "[a-z0-9]([-a-z0-9]*[a-z0-9])?", message = "Le namespace doit être un nom DNS Kubernetes valide")
     private String namespace;
 
     @NotNull(message = "Le nombre de réplicas est obligatoire")
@@ -50,8 +53,10 @@ public class CreateDeploymentRequest {
     @Size(max = 20, message = "La mémoire ne doit pas dépasser 20 caractères")
     private String memory;
 
+    @Size(max = 100, message = "Le nombre de variables d'environnement ne doit pas dépasser 100")
     private Map<String, String> envVariables;
 
+    @Size(max = 100, message = "Le nombre de références de secrets ne doit pas dépasser 100")
     private Map<String, String> secretVariables;
 
     private String gitRepository;

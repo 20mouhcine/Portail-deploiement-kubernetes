@@ -1,77 +1,60 @@
-import { Injectable, NgZone } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Injectable, NgZone, signal } from '@angular/core';
+import { Observable } from 'rxjs';
 import { DeploymentEvent, DeploymentStatusChange } from '../models/deployment-event.model';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class DeploymentSseService {
+export type SseConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'closed';
 
+@Injectable({ providedIn: 'root' })
+export class DeploymentSseService {
   private readonly API_URL = '/api';
+  readonly connectionState = signal<SseConnectionState>('closed');
 
   constructor(private zone: NgZone) {}
 
-  subscribeToDeploymentLogs(deploymentId: string): Observable<DeploymentEvent> {
-    return new Observable<DeploymentEvent>(observer => {
-      const eventSource = new EventSource(`${this.API_URL}/deployments/${deploymentId}/events`);
-
-      eventSource.addEventListener('log', (event: MessageEvent) => {
-        this.zone.run(() => {
-          observer.next(JSON.parse(event.data));
-        });
-      });
-
-      eventSource.onerror = (error) => {
-        this.zone.run(() => {
-          // You might not want to error out immediately on SSE reconnect attempts
-          // observer.error(error); 
-        });
-      };
-
-      return () => {
-        eventSource.close();
-      };
-    });
+  subscribeToDeploymentLogs(id: string): Observable<DeploymentEvent> {
+    return this.connect(`${this.API_URL}/deployments/${id}/events`, 'log', value => value as DeploymentEvent);
   }
 
-  subscribeToProjectDeployments(projectId: string): Observable<DeploymentStatusChange> {
-    return new Observable<DeploymentStatusChange>(observer => {
-      const eventSource = new EventSource(`${this.API_URL}/projects/${projectId}/deployments/stream`);
-
-      eventSource.addEventListener('status_change', (event: MessageEvent) => {
-        this.zone.run(() => {
-          observer.next(JSON.parse(event.data));
-        });
-      });
-
-      eventSource.onerror = (error) => {
-        this.zone.run(() => {
-        });
-      };
-
-      return () => {
-        eventSource.close();
-      };
-    });
+  subscribeToProjectDeployments(id: string): Observable<DeploymentStatusChange> {
+    return this.connect(`${this.API_URL}/projects/${id}/deployments/stream`, 'status_change', value => value as DeploymentStatusChange);
   }
 
   subscribeToAllDeployments(): Observable<DeploymentStatusChange> {
-    return new Observable<DeploymentStatusChange>(observer => {
-      const eventSource = new EventSource(`${this.API_URL}/deployments/stream`);
+    return this.connect(`${this.API_URL}/deployments/stream`, 'status_change', value => value as DeploymentStatusChange);
+  }
 
-      eventSource.addEventListener('status_change', (event: MessageEvent) => {
-        this.zone.run(() => {
-          observer.next(JSON.parse(event.data));
+  private connect<T>(url: string, eventName: string, deserialize: (value: unknown) => T): Observable<T> {
+    return new Observable<T>(observer => {
+      let source: EventSource | null = null;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let delay = 1000;
+      let stopped = false;
+      const state = (value: SseConnectionState) => this.zone.run(() => this.connectionState.set(value));
+      const open = () => {
+        if (stopped) return;
+        state(delay === 1000 ? 'connecting' : 'reconnecting');
+        source = new EventSource(url, { withCredentials: true });
+        source.onopen = () => { delay = 1000; state('connected'); };
+        source.addEventListener(eventName, (event: MessageEvent) => {
+          try {
+            this.zone.run(() => observer.next(deserialize(JSON.parse(event.data) as unknown)));
+          } catch { /* Ignore malformed events, keep the stream alive. */ }
         });
-      });
-
-      eventSource.onerror = (error) => {
-        this.zone.run(() => {
-        });
+        source.onerror = () => {
+          source?.close();
+          source = null;
+          if (stopped || timer) return;
+          state('reconnecting');
+          timer = setTimeout(() => { timer = null; open(); }, delay);
+          delay = Math.min(delay * 2, 30000);
+        };
       };
-
+      open();
       return () => {
-        eventSource.close();
+        stopped = true;
+        source?.close();
+        if (timer) clearTimeout(timer);
+        state('closed');
       };
     });
   }

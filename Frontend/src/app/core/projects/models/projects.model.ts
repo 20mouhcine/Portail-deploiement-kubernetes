@@ -3,6 +3,8 @@ export interface ProjectFormValue {
   name: string;
   description: string;
   repository: string;
+  allowedNamespaces: string[];
+  allowedUsers: string[];
 
 }
 export default interface Project {
@@ -12,5 +14,12 @@ export default interface Project {
   name: string;
   description: string;
   repository: string;
+  allowedNamespaces: string[];
+  allowedUsers: string[];
+  environmentType?: string;
+  deploymentPolicy?: string;
+  cpuQuota?: string;
+  memoryQuota?: string;
+  podQuota?: number;
 
 }

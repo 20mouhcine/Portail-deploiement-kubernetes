@@ -17,6 +17,13 @@
     {{ actionError() }}
   </div>
   }
+  @if (loadError()) {
+  <div class="mt-5 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+    <span>{{ loadError() }}</span>
+    <button type="button" (click)="reload()" [disabled]="loading()"
+      class="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Réessayer</button>
+  </div>
+  }
   <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs">
     <app-status-card label="Total" [value]="deployments().length.toString()" description="Déploiements enregistrés."
       tone="blue" />
@@ -53,7 +60,12 @@
     </div>
   </section>
 
-  @if (filteredDeployments().length) {
+  @if (loading()) {
+  <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+    <div class="mx-auto size-9 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+    <p class="mt-4 text-sm text-slate-500">Chargement des déploiements...</p>
+  </section>
+  } @else if (filteredDeployments().length) {
   <section class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     @for (deployment of filteredDeployments(); track deployment.id) {
     <app-deployment-card [deployment]="deployment" [canManage]="canManage() && !actionInProgress()" [operationInProgress]="activeOperations().has(deployment.id)" (detailsRequested)="openDetails($event)"

@@ -7,6 +7,7 @@ import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Enums.DeploymentStatus;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,7 +47,7 @@ public class DeploymentResponse {
                 deployment.getCpu(),
                 deployment.getMemory(),
                 deployment.getAccessUrl(),
-                deployment.getEnvVariables(),
+                new HashMap<>(deployment.getEnvVariables()),
                 deployment.getCreatedAt(),
                 deployment.getDeployedBy().getUsername(),
                 null
@@ -67,7 +68,7 @@ public class DeploymentResponse {
                 deployment.getCpu(),
                 deployment.getMemory(),
                 deployment.getAccessUrl(),
-                deployment.getEnvVariables(),
+                new HashMap<>(deployment.getEnvVariables()),
                 deployment.getCreatedAt(),
                 deployment.getDeployedBy().getUsername(),
                 operationId

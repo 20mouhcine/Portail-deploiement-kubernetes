@@ -1,9 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject, map, shareReplay, startWith, switchMap, tap, timer, filter, take } from 'rxjs';
+import { NEVER, Observable, Subject, catchError, finalize, map, of, shareReplay, startWith, switchMap, tap, timer, filter, take } from 'rxjs';
 
 import { Deployment, DeploymentDetail, DeploymentFormValue, DeploymentStatus, DeploymentJobResponse } from '../models/deployment.models';
 import { DeploymentSseService } from './deployment-sse.service';
+import { AuthService } from '../../auth/services/auth.service';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -16,16 +17,30 @@ export class DeploymentsService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/deployments';
   private readonly sseService = inject(DeploymentSseService);
+  private readonly authService = inject(AuthService);
   private readonly refresh$ = new Subject<void>();
+  readonly loading = signal(true);
+  readonly loadError = signal<string | null>(null);
 
   readonly deployments$: Observable<Deployment[]> = this.refresh$.pipe(
     startWith(undefined),
-    switchMap(() => this.http.get<Deployment[]>(this.apiUrl)),
+    switchMap(() => {
+      this.loading.set(true);
+      this.loadError.set(null);
+      return this.http.get<Deployment[]>(this.apiUrl).pipe(
+        catchError(error => {
+          this.loadError.set(this.authService.errorMessage(error));
+          return of([]);
+        }),
+        finalize(() => this.loading.set(false)),
+      );
+    }),
     switchMap((initialDeployments) => new Observable<Deployment[]>((observer) => {
       let current = [...initialDeployments];
       observer.next(current);
 
-      const subscription = this.sseService.subscribeToAllDeployments().subscribe((change) => {
+      const changes$ = this.authService.hasRole('ADMIN') ? this.sseService.subscribeToAllDeployments() : NEVER;
+      const subscription = changes$.subscribe((change) => {
         current = current.map((deployment) =>
           deployment.id === change.deploymentId
             ? { ...deployment, status: change.status as DeploymentStatus }
@@ -39,7 +54,7 @@ export class DeploymentsService {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
-  private refresh(): void {
+  refresh(): void {
     this.refresh$.next();
   }
 
@@ -99,9 +114,9 @@ export class DeploymentsService {
     );
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(
-      map(() => undefined),
+  delete(id: string): Observable<Deployment> {
+    return this.http.delete<ApiResponse<Deployment>>(`${this.apiUrl}/${id}`).pipe(
+      map(response => response.data),
       tap(() => this.refresh()),
     );
   }

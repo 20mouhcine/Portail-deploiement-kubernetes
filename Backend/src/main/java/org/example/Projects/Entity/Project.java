@@ -38,4 +38,35 @@ public class Project {
     @ManyToOne
     User owner;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "project_allowed_users",
+            joinColumns = @JoinColumn(name = "project_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uk_project_allowed_user",
+                    columnNames = {"project_id", "user_id"}
+            )
+    )
+    Set<User> allowedUsers = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "project_allowed_namespaces", joinColumns = @JoinColumn(name = "project_id"))
+    @Column(name = "namespace", nullable = false, length = 63)
+    Set<String> allowedNamespaces = new HashSet<>();
+
+    @Column(length = 30)
+    String environmentType;
+
+    @Column(length = 30)
+    String deploymentPolicy;
+
+    @Column(length = 20)
+    String cpuQuota;
+
+    @Column(length = 20)
+    String memoryQuota;
+
+    Integer podQuota;
+
 }

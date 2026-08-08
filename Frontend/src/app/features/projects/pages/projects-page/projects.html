@@ -66,6 +66,20 @@
         </div>
       </section>
 
+      @if (actionError()) {
+      <div class="mb-5 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <span>{{ actionError() }}</span>
+        <button type="button" (click)="refresh()" [disabled]="loading()"
+          class="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Réessayer</button>
+      </div>
+      }
+      @if (loading()) {
+      <section class="mb-5 rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center">
+        <div class="mx-auto size-9 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+        <p class="mt-4 text-sm text-slate-500">Chargement des projets...</p>
+      </section>
+      }
+
       <!-- Project Cards Grid -->
       @if (filteredProjects().length) {
       @if (viewMode() === 'cards' || !hasAccess()) {

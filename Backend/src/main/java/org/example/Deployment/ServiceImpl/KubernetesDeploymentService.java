@@ -20,11 +20,19 @@ import java.util.logging.Logger;
 @AllArgsConstructor
 public class KubernetesDeploymentService implements IKubernetesDeploymentService {
     private final KubernetesClient kubernetesClient;
+    private static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
+    private static final String MANAGED_BY_VALUE = "kubeportal";
+    private static final String DEPLOYMENT_ID_LABEL = "kubeportal.io/deployment-id";
     private static final List<String> ALLOWED_REGISTRIES = List.of("docker.io", "gcr.io", "ghcr.io", "quay.io", "registry.k8s.io");
 
     @Override
     public String deploy(Deployment deployment) throws InterruptedException {
         validateDeploymentConfig(deployment);
+        validateSecretReferencesExist(deployment);
+        assertOwned(kubernetesClient.apps().deployments().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
+        assertOwned(kubernetesClient.services().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
 
         String saName = deployment.getName() + "-sa";
         createServiceAccount(deployment, saName);
@@ -42,6 +50,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withName(deployment.getName())
                 .withNamespace(deployment.getNamespace())
                 .addToLabels("deployment-id", deployment.getId().toString())
+                .addToLabels(MANAGED_BY_LABEL, MANAGED_BY_VALUE)
+                .addToLabels(DEPLOYMENT_ID_LABEL, deployment.getId().toString())
                 .endMetadata()
                 .withNewSpec()
                 .withType("NodePort")
@@ -75,6 +85,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withName(deployment.getName())
                 .withNamespace(deployment.getNamespace())
                 .addToLabels("deployment-id", deployment.getId().toString())
+                .addToLabels(MANAGED_BY_LABEL, MANAGED_BY_VALUE)
+                .addToLabels(DEPLOYMENT_ID_LABEL, deployment.getId().toString())
                 .addToLabels("project-id", deployment.getProject() != null ? deployment.getProject().getId().toString() : "none")
                 .addToLabels("deployed-by", deployment.getDeployedBy() != null ? deployment.getDeployedBy().getUsername() : "system")
                 .endMetadata()
@@ -87,6 +99,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withNewMetadata()
                 .addToLabels("app", deployment.getName())
                 .addToLabels("deployment-id", deployment.getId().toString())
+                .addToLabels(MANAGED_BY_LABEL, MANAGED_BY_VALUE)
+                .addToLabels(DEPLOYMENT_ID_LABEL, deployment.getId().toString())
                 .addToAnnotations("seccomp.security.alpha.kubernetes.io/pod", "runtime/default")
                 .endMetadata()
                 .withNewSpec()
@@ -208,6 +222,28 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
         return variables;
     }
 
+    private void validateSecretReferencesExist(Deployment deployment) {
+        if (deployment.getSecretVariables() == null) return;
+        deployment.getSecretVariables().forEach((environmentName, reference) -> {
+            String[] parts = reference.split("/", 2);
+            Secret secret = kubernetesClient.secrets().inNamespace(deployment.getNamespace())
+                    .withName(parts[0]).get();
+            if (secret == null || secret.getData() == null || !secret.getData().containsKey(parts[1])) {
+                throw new IllegalArgumentException("Secret Kubernetes introuvable pour " + environmentName);
+            }
+        });
+    }
+
+    private void assertOwned(HasMetadata resource, Deployment deployment) {
+        if (resource == null) return;
+        Map<String, String> labels = resource.getMetadata() == null ? null : resource.getMetadata().getLabels();
+        boolean owned = labels != null && (deployment.getId().toString().equals(labels.get(DEPLOYMENT_ID_LABEL))
+                || deployment.getId().toString().equals(labels.get("deployment-id")));
+        if (!owned) {
+            throw new KubernetesClientException("Une ressource Kubernetes non gérée porte déjà ce nom");
+        }
+    }
+
     @Override
     public String getAccessUrl(Deployment deployment) {
         io.fabric8.kubernetes.api.model.Service service = kubernetesClient.services()
@@ -255,6 +291,9 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     @Override
     public void updateSpec(Deployment deployment) {
         validateDeploymentConfig(deployment);
+        validateSecretReferencesExist(deployment);
+        assertOwned(kubernetesClient.apps().deployments().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
         String saName = deployment.getName() + "-sa";
         io.fabric8.kubernetes.api.model.apps.Deployment updated = buildDeploymentManifest(deployment, saName);
 
@@ -283,6 +322,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     }
 
     public void scale(Deployment deployment, int replicas) {
+        assertOwned(kubernetesClient.apps().deployments().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
         kubernetesClient.apps().deployments()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName())
@@ -294,6 +335,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     }
 
     public void restart(Deployment deployment) {
+        assertOwned(kubernetesClient.apps().deployments().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
         kubernetesClient.apps().deployments()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName())
@@ -313,6 +356,10 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     }
 
     public void delete(Deployment deployment) {
+        assertOwned(kubernetesClient.apps().deployments().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
+        assertOwned(kubernetesClient.services().inNamespace(deployment.getNamespace())
+                .withName(deployment.getName()).get(), deployment);
         kubernetesClient.apps().deployments()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName())

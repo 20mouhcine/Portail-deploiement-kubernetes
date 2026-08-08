@@ -43,6 +43,10 @@ public class DeploymentJob {
     // e.g. store replicas for scale operation
     private Integer targetReplicas;
 
+    private LocalDateTime nextAttemptAt;
+
+    private LocalDateTime startedAt;
+
     @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
@@ -52,4 +56,7 @@ public class DeploymentJob {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Version
+    private long version;
 }

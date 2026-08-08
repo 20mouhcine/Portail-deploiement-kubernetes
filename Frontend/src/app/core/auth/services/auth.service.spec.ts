@@ -13,7 +13,7 @@ describe('AuthService', () => {
   let http: HttpTestingController;
 
   const user: CurrentUser = {
-    id: 1,
+    id: '00000000-0000-0000-0000-000000000001',
     username: 'admin',
     email: 'admin@example.com',
     enabled: true,

@@ -1,6 +1,7 @@
 package org.example.auth.repository;
 
 import org.example.auth.entity.User;
+import org.example.auth.enums.RoleName;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,4 +26,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByUsernameIgnoreCase(String username);
 
     boolean existsByEmailIgnoreCase(String email);
+
+    long countByEnabledTrueAndRoles_Name(RoleName roleName);
 }

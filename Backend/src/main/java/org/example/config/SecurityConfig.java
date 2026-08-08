@@ -6,6 +6,7 @@ import org.example.History.Enums.ActionType;
 import org.example.History.Enums.TargetType;
 import org.example.History.Service.IActionHistoryService;
 import org.example.auth.security.LoginRateLimitFilter;
+import org.example.auth.dto.ApiError;
 import org.example.auth.security.SpaCsrfTokenRequestHandler;
 import org.example.auth.service.LoginAttemptService;
 import org.example.auth.service.UserService;
@@ -23,6 +24,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 
 @Configuration
 @EnableMethodSecurity
@@ -61,7 +66,8 @@ public class SecurityConfig {
             IActionHistoryService historyService,
             LoginAttemptService loginAttemptService,
             LoginRateLimitFilter loginRateLimitFilter,
-            CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
+            CookieCsrfTokenRepository csrfTokenRepository,
+            SessionRegistry sessionRegistry) throws Exception {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
@@ -104,9 +110,8 @@ public class SecurityConfig {
                                     request.getParameter("username"),
                                     request.getRemoteAddr()
                             );
-                            writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, Map.of(
-                                    "message", "Identifiants incorrects"
-                            ));
+                            writeErrorJson(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                    "AUTHENTICATION_FAILED", "Identifiants incorrects", request.getRequestURI());
                         })
                         .permitAll()
                 )
@@ -133,24 +138,34 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
-                                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, Map.of(
-                                        "message", "Authentification requise"
-                                ))
+                                writeErrorJson(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        "AUTHENTICATION_REQUIRED", "Authentification requise", request.getRequestURI())
                         )
                         .accessDeniedHandler((request, response, exception) ->
-                                writeJson(response, HttpServletResponse.SC_FORBIDDEN, Map.of(
-                                        "message", "Accès refusé"
-                                ))
+                                writeErrorJson(response, HttpServletResponse.SC_FORBIDDEN,
+                                        "ACCESS_DENIED", "Accès refusé", request.getRequestURI())
                         )
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation(fixation -> fixation.migrateSession())
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry)
                 )
                 .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .requestCache(cache -> cache.disable());
 
         return http.build();
+    }
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 
     @Bean
@@ -179,10 +194,18 @@ public class SecurityConfig {
     private void writeJson(
             HttpServletResponse response,
             int status,
-            Map<String, String> body) throws IOException {
+            Object body) throws IOException {
         response.setStatus(status);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), body);
+    }
+
+    private void writeErrorJson(HttpServletResponse response, int status, String code,
+                                String message, String path) throws IOException {
+        writeJson(response, status, new ApiError(
+                Instant.now(), status,
+                status == HttpServletResponse.SC_UNAUTHORIZED ? "Unauthorized" : "Forbidden",
+                code, message, path, false, Map.of()));
     }
 }

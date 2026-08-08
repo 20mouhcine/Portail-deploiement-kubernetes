@@ -11,6 +11,7 @@ import org.example.Deployment.Repository.DeploymentEventRepository;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Service.IDeploymentEventService;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -77,6 +78,13 @@ public List<DeploymentEvent> findByDeploymentIdOrderByTimestampDesc(UUID deploym
     }
     
     private final List<SseEmitter> globalEmitters = new CopyOnWriteArrayList<>();
+
+    @Scheduled(fixedDelayString = "${app.sse.heartbeat-ms:25000}")
+    public void sendHeartbeat() {
+        deploymentLogEmitters.values().forEach(this::sendHeartbeat);
+        projectEmitters.values().forEach(this::sendHeartbeat);
+        sendHeartbeat(globalEmitters);
+    }
     
     public SseEmitter subscribeToAllDeployments() {
         SseEmitter emitter = new SseEmitter(TIMEOUT);
@@ -175,5 +183,17 @@ public List<DeploymentEvent> findByDeploymentIdOrderByTimestampDesc(UUID deploym
             }
         }
         emitters.removeAll(deadEmitters);
+    }
+
+    private void sendHeartbeat(List<SseEmitter> emitters) {
+        List<SseEmitter> dead = new CopyOnWriteArrayList<>();
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().comment("heartbeat"));
+            } catch (IOException | IllegalStateException exception) {
+                dead.add(emitter);
+            }
+        }
+        emitters.removeAll(dead);
     }
 }

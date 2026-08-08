@@ -7,13 +7,14 @@ import org.example.Deployment.DTO.DeploymentJobResponse;
 import org.example.Deployment.DTO.PodResponse;
 import org.example.Deployment.DTO.UpdateDeploymentRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface IDeploymentService {
 
-    List<DeploymentResponse> findAll();
+    List<DeploymentResponse> findAll(Authentication authentication);
 
     DeploymentResponse findById(UUID id);
 
@@ -31,7 +32,7 @@ public interface IDeploymentService {
 
     DeploymentResponse rollback(UUID id);
 
-    void delete(UUID id);
+    DeploymentResponse delete(UUID id);
 
     DeploymentJobResponse getJobStatus(UUID jobId);
 

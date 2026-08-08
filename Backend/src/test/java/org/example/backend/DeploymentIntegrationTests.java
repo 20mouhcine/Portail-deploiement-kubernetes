@@ -3,6 +3,7 @@ package org.example.backend;
 import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Enums.DeploymentStatus;
 import org.example.Deployment.Repository.DeploymentRepository;
+import org.example.Deployment.Repository.DeploymentJobRepository;
 import org.example.Projects.Entity.Project;
 import org.example.Projects.Repository.ProjectRepository;
 import org.example.auth.entity.Role;
@@ -21,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -42,6 +44,9 @@ class DeploymentIntegrationTests {
     private DeploymentRepository deploymentRepository;
 
     @Autowired
+    private DeploymentJobRepository deploymentJobRepository;
+
+    @Autowired
     private ProjectRepository projectRepository;
 
     @Autowired
@@ -55,6 +60,7 @@ class DeploymentIntegrationTests {
 
     @AfterEach
     void cleanData() {
+        deploymentJobRepository.deleteAll();
         deploymentRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
@@ -120,6 +126,57 @@ class DeploymentIntegrationTests {
     }
 
     @Test
+    void adminCanListExistingDeployment() throws Exception {
+        User owner = createUser("list-owner", RoleName.DEVOPS);
+        createUser("list-admin", RoleName.ADMIN);
+        Deployment deployment = createDeployment(createProject("List project", owner), owner);
+
+        mockMvc.perform(get("/api/deployments")
+                        .with(user("list-admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(deployment.getId().toString()))
+                .andExpect(jsonPath("$[0].projectName").value("List project"))
+                .andExpect(jsonPath("$[0].deployedBy").value("list-owner"));
+    }
+
+    @Test
+    void projectOwnerComesFromAuthenticatedUser() throws Exception {
+        User creator = createUser("creator", RoleName.DEVELOPER);
+        User victim = createUser("victim", RoleName.DEVELOPER);
+
+        mockMvc.perform(post("/api/projects")
+                        .with(user("creator").roles("DEVELOPER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Secure Project",
+                                  "description": "test",
+                                  "repository": "https://github.com/example/secure",
+                                  "owner_id": "%s",
+                                  "allowedNamespaces": ["default"]
+                                }
+                                """.formatted(victim.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.ownerUsername").value("creator"));
+
+        Project saved = projectRepository.findByName("Secure Project");
+        org.assertj.core.api.Assertions.assertThat(saved.getOwner().getId()).isEqualTo(creator.getId());
+    }
+
+    @Test
+    void unrelatedDeveloperCannotReadDeploymentDetails() throws Exception {
+        User owner = createUser("owner", RoleName.DEVOPS);
+        createUser("unrelated", RoleName.DEVELOPER);
+        Deployment deployment = createDeployment(createProject("Private", owner), owner);
+
+        mockMvc.perform(get("/api/deployments/{id}/details", deployment.getId())
+                        .with(user("unrelated").roles("DEVELOPER")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     void invalidReplicaCountIsRejected() throws Exception {
         mockMvc.perform(post("/api/deployments")
                         .with(user("devops").roles("DEVOPS"))
@@ -173,6 +230,7 @@ class DeploymentIntegrationTests {
         project.setRepository("https://github.com/example/test");
         project.setCreatedAt(LocalDateTime.now());
         project.setOwner(owner);
+        project.setAllowedNamespaces(Set.of("production"));
         return projectRepository.saveAndFlush(project);
     }
 
