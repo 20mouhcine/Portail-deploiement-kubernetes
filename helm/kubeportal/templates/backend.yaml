@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubeportal.fullname" . }}-backend
+  labels:
+    {{- include "kubeportal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: {{ .Values.backend.service.type }}
+  selector:
+    {{- include "kubeportal.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: {{ .Values.backend.service.port }}
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubeportal.fullname" . }}-backend
+  labels:
+    {{- include "kubeportal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubeportal.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "kubeportal.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "kubeportal.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ include "kubeportal.databaseHost" . }}:{{ include "kubeportal.databasePort" . }}/{{ include "kubeportal.databaseName" . }}"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: {{ include "kubeportal.databaseUsername" . | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kubeportal.secretName" . }}
+                  key: DB_PASSWORD
+            - name: INITIAL_ADMIN_USERNAME
+              value: {{ .Values.initialAdmin.username | quote }}
+            - name: INITIAL_ADMIN_EMAIL
+              value: {{ .Values.initialAdmin.email | quote }}
+            - name: INITIAL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kubeportal.secretName" . }}
+                  key: INITIAL_ADMIN_PASSWORD
+            - name: CORS_ALLOWED_ORIGINS
+              value: {{ .Values.cors.allowedOrigins | quote }}
+            - name: SESSION_COOKIE_SECURE
+              value: {{ .Values.sessionCookieSecure | quote }}
+            - name: KUBERNETES_WATCHERS_ENABLED
+              value: {{ .Values.backend.env.kubernetesWatchersEnabled | quote }}
+            - name: DEPLOYMENT_JOBS_ENABLED
+              value: {{ .Values.backend.env.deploymentJobsEnabled | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.backend.env.javaToolOptions | quote }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

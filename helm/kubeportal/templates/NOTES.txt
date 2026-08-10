@@ -1,0 +1,13 @@
+KubePortal a été installé dans le namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+URL : {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ (index .Values.ingress.hosts 0).host }}
+{{- else }}
+Accès local :
+  kubectl port-forward -n {{ .Release.Namespace }} service/{{ include "kubeportal.fullname" . }}-frontend 8080:{{ .Values.frontend.service.port }}
+
+Puis ouvrir http://localhost:8080
+{{- end }}
+
+État des composants :
+  kubectl get pods,services -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}

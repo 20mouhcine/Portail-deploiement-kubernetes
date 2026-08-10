@@ -1,0 +1,56 @@
+{{- define "kubeportal.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "kubeportal.fullname" -}}
+{{- if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name (include "kubeportal.name" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{- define "kubeportal.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
+app.kubernetes.io/name: {{ include "kubeportal.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{- define "kubeportal.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "kubeportal.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "kubeportal.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "kubeportal.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{- define "kubeportal.secretName" -}}
+{{- default (printf "%s-secrets" (include "kubeportal.fullname" .)) .Values.secrets.existingSecret }}
+{{- end }}
+
+{{- define "kubeportal.databaseHost" -}}
+{{- if .Values.postgresql.enabled }}
+{{- printf "%s-postgresql" (include "kubeportal.fullname" .) }}
+{{- else }}
+{{- required "externalDatabase.host est obligatoire quand postgresql.enabled=false" .Values.externalDatabase.host }}
+{{- end }}
+{{- end }}
+
+{{- define "kubeportal.databaseName" -}}
+{{- if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.database }}{{- else }}{{ .Values.externalDatabase.database }}{{- end }}
+{{- end }}
+
+{{- define "kubeportal.databaseUsername" -}}
+{{- if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.username }}{{- else }}{{ .Values.externalDatabase.username }}{{- end }}
+{{- end }}
+
+{{- define "kubeportal.databasePort" -}}
+{{- if .Values.postgresql.enabled }}5432{{- else }}{{ .Values.externalDatabase.port }}{{- end }}
+{{- end }}

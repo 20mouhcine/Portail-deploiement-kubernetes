@@ -56,3 +56,47 @@ npm run build
 ```
 
 Les jobs Kubernetes sont réessayés avec temporisation exponentielle. Les jobs abandonnés et les rollouts trop longs sont marqués en échec, et les flux SSE envoient des heartbeats avec reconnexion progressive côté frontend.
+
+## Images Docker
+
+Construire les deux images depuis la racine du projet :
+
+```powershell
+docker build -t kubeportal-backend:local ./Backend
+docker build -t kubeportal-frontend:local ./Frontend
+```
+
+Le frontend est servi par Nginx sur le port `8080`. Les requêtes `/api` sont transmises au backend grâce à la variable `BACKEND_HOST`, renseignée automatiquement par le chart Helm.
+
+## Déploiement Helm sur Minikube
+
+Le chart `helm/kubeportal` installe le frontend, le backend, PostgreSQL, les Services, le compte de service et les autorisations Kubernetes nécessaires au portail.
+
+```powershell
+minikube start
+minikube image load kubeportal-backend:local
+minikube image load kubeportal-frontend:local
+
+helm upgrade --install kubeportal ./helm/kubeportal `
+  --namespace kubeportal `
+  --create-namespace `
+  --set fullnameOverride=kubeportal `
+  --set backend.image.tag=local `
+  --set frontend.image.tag=local `
+  --set-string postgresql.auth.password="mot-de-passe-db" `
+  --set-string initialAdmin.password="mot-de-passe-admin"
+
+kubectl get pods,services -n kubeportal
+kubectl port-forward -n kubeportal service/kubeportal-frontend 8080:80
+```
+
+Ouvrir ensuite `http://localhost:8080`. Pour une exposition par Ingress, activer `ingress.enabled`, configurer l'hôte et activer l'addon Minikube avec `minikube addons enable ingress`.
+
+En production, utiliser un Secret existant contenant `DB_PASSWORD` et `INITIAL_ADMIN_PASSWORD`, une base PostgreSQL gérée, TLS, `sessionCookieSecure=true` et des images versionnées dans un registre. La valeur `rbac.clusterWide=true` permet au portail de gérer plusieurs namespaces ; la désactiver limite ses opérations au namespace d'installation.
+
+Supprimer l'installation locale avec :
+
+```powershell
+helm uninstall kubeportal -n kubeportal
+kubectl delete namespace kubeportal
+```
