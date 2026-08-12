@@ -72,6 +72,7 @@ describe('AuthService', () => {
     const loginRequest = http.expectOne('/api/auth/login');
     expect(loginRequest.request.method).toBe('POST');
     expect(loginRequest.request.body.get('username')).toBe('admin');
+    expect(loginRequest.request.headers.get('X-XSRF-TOKEN')).toBe('first-token');
     loginRequest.flush({ message: 'Connexion réussie' });
 
     http.expectOne('/api/auth/csrf').flush({

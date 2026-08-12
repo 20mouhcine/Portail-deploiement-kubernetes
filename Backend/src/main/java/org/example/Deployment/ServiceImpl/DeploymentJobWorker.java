@@ -45,7 +45,7 @@ public class DeploymentJobWorker {
         DeploymentJob job = jobRepository.findById(jobId).orElse(null);
         if (job == null || job.getStatus() != JobStatus.APPLYING) return;
         try {
-            Deployment deployment = deploymentRepository.findById(job.getDeploymentId())
+            Deployment deployment = deploymentRepository.findForJobById(job.getDeploymentId())
                     .orElseThrow(() -> new IllegalStateException("Déploiement introuvable"));
             switch (job.getOperationType()) {
                 case CREATE -> {

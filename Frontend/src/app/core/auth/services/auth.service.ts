@@ -64,10 +64,11 @@ export class AuthService {
       .set('password', credentials.password);
 
     return this.refreshCsrfToken().pipe(
-      switchMap(() =>
+      switchMap((csrf) =>
         this.http.post<ApiMessage>('/api/auth/login', body, {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            [csrf.headerName]: csrf.token,
           },
         }),
       ),

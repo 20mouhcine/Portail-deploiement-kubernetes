@@ -7,6 +7,7 @@ import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Entity.DeploymentJob;
 import org.example.Deployment.Entity.DeploymentRevision;
 import org.example.Deployment.Enums.DeploymentStatus;
+import org.example.Deployment.Enums.JobStatus;
 import org.example.Deployment.Repository.DeploymentJobRepository;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Repository.DeploymentRevisionRepository;
@@ -90,7 +91,11 @@ public class DeploymentServiceImpl implements IDeploymentService {
                         .map(PodResponse::getReason)
                         .filter(reason -> reason != null && !reason.isBlank())
                         .findFirst()
-                        .orElse(null));
+                        .orElseGet(() -> deploymentJobRepository
+                                .findFirstByDeploymentIdAndStatusOrderByCreatedAtDesc(id, JobStatus.FAILED)
+                                .map(DeploymentJob::getErrorMessage)
+                                .filter(message -> !message.isBlank())
+                                .orElse(null)));
 
         return DeploymentDetailResponse.from(
                 deployment,
@@ -168,7 +173,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
         String namespace = request.getNamespace().trim();
         if (!deployment.getName().equals(name) || !deployment.getNamespace().equals(namespace)) {
             throw new IllegalArgumentException(
-                    "Le nom et le namespace ne peuvent pas Ãªtre modifiÃ©s aprÃ¨s la crÃ©ation du dÃ©ploiement");
+                    "Le nom et le namespace ne peuvent pas être modifiés après la création du déploiement");
         }
         ensureUnique(name, namespace, id);
 
@@ -335,7 +340,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
     private Deployment getDeployment(UUID id) {
         return deploymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "DÃ©ploiement introuvable avec l'identifiant " + id));
+                        "Déploiement introuvable avec l'identifiant " + id));
     }
 
     @Transactional(readOnly = true)
@@ -353,7 +358,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
                         name, namespace, excludedId);
         if (exists) {
             throw new DuplicateResourceException(
-                    "Un dÃ©ploiement nommÃ© " + name + " existe dÃ©jÃ  dans le namespace " + namespace);
+                    "Un déploiement nommé " + name + " existe déjà dans le namespace " + namespace);
         }
     }
 
@@ -402,7 +407,7 @@ public class DeploymentServiceImpl implements IDeploymentService {
         for (Map.Entry<String, String> entry : secretReferences.entrySet()) {
             if (!entry.getKey().matches("[A-Za-z_][A-Za-z0-9_]*") || entry.getValue() == null
                     || !entry.getValue().matches("[a-z0-9]([-a-z0-9]*[a-z0-9])?/[A-Za-z0-9._-]+")) {
-                throw new IllegalArgumentException("Les secrets doivent utiliser le format nom-du-secret/clÃ©.");
+                throw new IllegalArgumentException("Les secrets doivent utiliser le format nom-du-secret/clé.");
             }
         }
     }

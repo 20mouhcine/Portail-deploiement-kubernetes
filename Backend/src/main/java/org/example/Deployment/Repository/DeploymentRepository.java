@@ -27,6 +27,9 @@ public interface DeploymentRepository extends JpaRepository<Deployment, UUID> {
     @EntityGraph(attributePaths = {"project", "project.owner", "project.allowedUsers", "project.allowedNamespaces"})
     Optional<Deployment> findWithProjectAccessById(UUID id);
 
+    @EntityGraph(attributePaths = {"project", "deployedBy"})
+    Optional<Deployment> findForJobById(UUID id);
+
     @EntityGraph(attributePaths = {"project", "project.owner", "project.allowedUsers", "project.allowedNamespaces"})
     List<Deployment> findAllWithProjectByOrderByCreatedAtDesc();
 }

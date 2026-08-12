@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -34,4 +35,9 @@ public interface DeploymentJobRepository extends JpaRepository<DeploymentJob, UU
     List<DeploymentJob> findClaimable(@Param("now") LocalDateTime now, Pageable pageable);
 
     List<DeploymentJob> findByStatusAndStartedAtBefore(JobStatus status, LocalDateTime threshold);
+
+    Optional<DeploymentJob> findFirstByDeploymentIdAndStatusOrderByCreatedAtDesc(
+            UUID deploymentId,
+            JobStatus status
+    );
 }
