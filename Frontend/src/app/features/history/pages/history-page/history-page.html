@@ -1,7 +1,12 @@
 <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
   <header><p class="mb-2 text-sm font-semibold text-blue-600">Journal d’audit</p><h1 class="text-3xl font-bold tracking-tight text-slate-950">Historique des actions</h1><p class="mt-2 max-w-2xl text-slate-500">Consultez les opérations réalisées sur les projets, les déploiements et les comptes.</p></header>
 
-  <div class="mt-6 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">i</span><p><strong>Mode frontend :</strong> les entrées affichées sont temporaires. Elles seront ensuite chargées depuis le backend.</p></div>
+  @if (loadError()) {
+    <div class="mt-6 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" (click)="reload()" [disabled]="loading()" class="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Réessayer</button>
+    </div>
+  }
 
   <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs">
     <app-status-card label="Actions" [value]="entries().length.toString()" description="Traces disponibles dans le journal." tone="blue" />
@@ -19,7 +24,12 @@
     </div>
   </section>
 
-  @if (filteredEntries().length === 0) {
+  @if (loading()) {
+    <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+      <div class="mx-auto size-9 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+      <p class="mt-4 text-sm text-slate-500">Chargement de l’historique…</p>
+    </section>
+  } @else if (filteredEntries().length === 0) {
     <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center"><p class="font-semibold text-slate-700">Aucune action trouvée</p><p class="mt-1 text-sm text-slate-400">Modifiez votre recherche ou votre filtre.</p></section>
   } @else if (viewMode() === 'timeline') {
     <section class="mt-6 max-w-5xl" aria-label="Chronologie des actions">@for (entry of filteredEntries(); track entry.id; let last = $last) { <app-history-entry [entry]="entry" [last]="last" /> }</section>

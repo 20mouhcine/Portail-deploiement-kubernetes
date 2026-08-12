@@ -64,7 +64,7 @@ export class DeploymentDetailPage {
     const current = this.deployment();
     const image = this.newImage().trim();
     if (!current || !image) {
-      this.actionError.set('Indiquez une image avant de lancer le dÃ©ploiement.');
+      this.actionError.set('Indiquez une image avant de lancer le déploiement.');
       return;
     }
 
@@ -110,15 +110,15 @@ export class DeploymentDetailPage {
     const labels: Record<string, string> = {
       PENDING: 'En progression',
       RUNNING: 'Actif',
-      FAILED: 'En Ã©chec',
-      STOPPED: 'ArrÃªtÃ©',
+      FAILED: 'En échec',
+      STOPPED: 'Arrêté',
       SUCCEEDED: 'Stable',
     };
     return labels[status] ?? status;
   }
 
   protected maskSecret(value: string): string {
-    return value ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' : 'â€”';
+    return value ? '••••••••' : '—';
   }
 
   protected revisionBadge(revision: DeploymentRevision): string {

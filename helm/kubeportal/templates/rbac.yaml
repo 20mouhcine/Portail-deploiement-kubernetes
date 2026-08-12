@@ -8,7 +8,7 @@ metadata:
     {{- include "kubeportal.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "deployments/scale"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["pods", "pods/log", "services", "serviceaccounts"]
@@ -46,7 +46,7 @@ metadata:
     {{- include "kubeportal.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "deployments/scale"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["pods", "pods/log", "services", "serviceaccounts"]

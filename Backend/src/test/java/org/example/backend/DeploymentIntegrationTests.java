@@ -22,8 +22,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -210,6 +212,20 @@ class DeploymentIntegrationTests {
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("STOPPED"));
+    }
+
+    @Test
+    void jobQueryLoadsEnvironmentAndSecretVariablesOutsideTheRepositorySession() {
+        User devops = createUser("job-owner", RoleName.DEVOPS);
+        Deployment deployment = createDeployment(createProject("Job project", devops), devops);
+        deployment.setEnvVariables(Map.of("APP_MODE", "test"));
+        deployment.setSecretVariables(Map.of("API_TOKEN", "app-secret/token"));
+        deployment = deploymentRepository.saveAndFlush(deployment);
+
+        Deployment loaded = deploymentRepository.findForJobById(deployment.getId()).orElseThrow();
+
+        assertThat(loaded.getEnvVariables()).containsEntry("APP_MODE", "test");
+        assertThat(loaded.getSecretVariables()).containsEntry("API_TOKEN", "app-secret/token");
     }
 
     private User createUser(String username, RoleName roleName) {

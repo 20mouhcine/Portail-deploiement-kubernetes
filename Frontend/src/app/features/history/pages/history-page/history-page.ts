@@ -17,6 +17,8 @@ export class HistoryPage {
   private readonly historyService = inject(ActionHistoryService);
 
   protected readonly entries = this.historyService.entries;
+  protected readonly loading = this.historyService.loading;
+  protected readonly loadError = this.historyService.error;
   protected readonly searchTerm = signal('');
   protected readonly actionFilter = signal<ActionType | 'ALL'>('ALL');
   protected readonly viewMode = signal<'timeline' | 'table'>('timeline');
@@ -35,6 +37,11 @@ export class HistoryPage {
     });
   });
 
+  constructor() {
+    this.historyService.load();
+  }
+
+  protected reload(): void { this.historyService.load(); }
   protected search(event: Event): void { this.searchTerm.set((event.target as HTMLInputElement).value); }
   protected filterByAction(event: Event): void { this.actionFilter.set((event.target as HTMLSelectElement).value as ActionType | 'ALL'); }
   protected setViewMode(mode: 'timeline' | 'table'): void { this.viewMode.set(mode); }

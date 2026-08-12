@@ -30,7 +30,7 @@ export class AppSidebar {
     try {
       localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next));
     } catch {
-      // localStorage unavailable (e.g. private browsing) â€” ignore, state still works in-memory
+      // localStorage unavailable (e.g. private browsing) — ignore, state still works in-memory
     }
     this.collapsedChange.emit(next);
   }
