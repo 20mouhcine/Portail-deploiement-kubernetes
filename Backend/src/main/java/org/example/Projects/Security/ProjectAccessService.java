@@ -67,6 +67,8 @@ public class ProjectAccessService {
     }
 
     public boolean canReadOperation(UUID jobId, Authentication authentication) {
+        if (!authenticated(authentication)) return false;
+        if (hasRole(authentication, "ADMIN")) return true;
         return deploymentJobRepository.findById(jobId)
                 .map(job -> canReadDeployment(job.getDeploymentId(), authentication))
                 .orElse(false);

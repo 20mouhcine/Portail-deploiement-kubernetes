@@ -63,7 +63,7 @@ export class AuthService {
       .set('username', credentials.username.trim())
       .set('password', credentials.password);
 
-    return this.refreshCsrfToken().pipe(
+    const submit = () => this.refreshCsrfToken().pipe(
       switchMap((csrf) =>
         this.http.post<ApiMessage>('/api/auth/login', body, {
           headers: {
@@ -71,6 +71,12 @@ export class AuthService {
             [csrf.headerName]: csrf.token,
           },
         }),
+      ),
+    );
+
+    return submit().pipe(
+      catchError((error: HttpErrorResponse) =>
+        error.status === 403 ? submit() : throwError(() => error),
       ),
       switchMap(() => this.refreshCsrfToken()),
       switchMap(() => this.fetchCurrentUser()),
@@ -94,7 +100,7 @@ export class AuthService {
   }
 
   homeUrl(): string {
-    return this.hasRole('ADMIN') ? '/admin/dashboard' : '/dashboard';
+    return '/dashboard';
   }
 
   errorMessage(error: unknown): string {
@@ -111,6 +117,9 @@ export class AuthService {
       return Object.values(apiError.fieldErrors).join(' ');
     }
     if (error.status === 401) return 'Votre session a expiré. Reconnectez-vous.';
+    if (error.status === 403 && error.url?.endsWith('/api/auth/login')) {
+      return 'La session de sécurité a expiré. Actualisez la page puis réessayez.';
+    }
     if (error.status === 403) return 'Vous n’avez pas les droits nécessaires pour cette action.';
     const suffix = error.status === 503 && apiError?.retryable ? ' Réessayez dans quelques instants.' : '';
     return (apiError?.message ?? 'La requête n’a pas pu être traitée.') + suffix;

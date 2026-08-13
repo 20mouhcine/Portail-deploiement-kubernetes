@@ -98,14 +98,18 @@ class DeploymentIntegrationTests {
     }
 
     @Test
-    void adminCannotCreateDeployment() throws Exception {
+    void adminCanCreateDeploymentForAnExistingProject() throws Exception {
+        User owner = createUser("admin-project-owner", RoleName.DEVOPS);
+        createUser("admin-deployer", RoleName.ADMIN);
+        Project project = createProject("Admin deployment project", owner);
+
         mockMvc.perform(post("/api/deployments")
-                        .with(user("admin").roles("ADMIN"))
+                        .with(user("admin-deployer").roles("ADMIN"))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "projectId": "00000000-0000-0000-0000-000000000001",
+                                  "projectId": "%s",
                                   "name": "backend-api",
                                   "namespace": "production",
                                   "replicas": 2,
@@ -114,9 +118,10 @@ class DeploymentIntegrationTests {
                                   "cpu": "500m",
                                   "memory": "512Mi"
                                 }
-                                """))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Accès refusé"));
+                                """.formatted(project.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("backend-api"))
+                .andExpect(jsonPath("$.data.deployedBy").value("admin-deployer"));
     }
 
     @Test

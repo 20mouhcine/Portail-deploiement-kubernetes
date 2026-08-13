@@ -35,7 +35,9 @@ export class DashboardPage {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly formOpen = signal(false);
   protected readonly actionInProgress = signal(false);
-  protected readonly canCreate = computed(() => this.auth.hasRole('DEVOPS'));
+  protected readonly canCreate = computed(() =>
+    this.auth.hasRole('ADMIN') || this.auth.hasRole('DEVOPS'),
+  );
   protected readonly activeDeployments = computed(() => this.deployments().filter(item => item.status === 'RUNNING').length);
   protected readonly failedDeployments = computed(() => this.deployments().filter(item => item.status === 'FAILED').length);
   protected readonly recentHistory = computed(() => this.history().slice(0, 5));

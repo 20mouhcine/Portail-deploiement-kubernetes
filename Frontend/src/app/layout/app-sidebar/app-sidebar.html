@@ -33,7 +33,7 @@
 
   <nav class="mt-9 flex-1 space-y-2" aria-label="Navigation principale" (click)="closeMobileMenu()">
     <a
-      [routerLink]="user().roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard'"
+      routerLink="/dashboard"
       routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
       class="group flex items-center justify-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
       [class.lg:justify-start]="!collapsed()"
@@ -49,6 +49,20 @@
     </a>
 
     @if (user().roles.includes('ADMIN')) {
+      <a
+        routerLink="/admin/dashboard"
+        routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+        class="group flex items-center justify-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        [class.lg:justify-start]="!collapsed()"
+        title="Administration"
+      >
+        <svg class="size-5 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <path d="M10 2.5 16 5v4.6c0 3.65-2.4 6.2-6 7.9-3.6-1.7-6-4.25-6-7.9V5l6-2.5Z" />
+          <path d="M7 10h6M10 7v6" />
+        </svg>
+        <span class="hidden" [class.lg:inline]="!collapsed()">Administration</span>
+      </a>
+
       <a 
         routerLink="/admin/users/new"
         routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-950/30"

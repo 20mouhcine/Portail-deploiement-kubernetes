@@ -14,9 +14,7 @@ export const operationalGuard: CanActivateFn = () => {
         return router.createUrlTree(['/login']);
       }
 
-      return auth.hasRole('ADMIN')
-        ? router.createUrlTree(['/admin/dashboard'])
-        : true;
+      return true;
     }),
     catchError(() => of(router.createUrlTree(['/login']))),
   );

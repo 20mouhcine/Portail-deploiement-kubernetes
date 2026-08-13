@@ -165,19 +165,16 @@ export class DeploymentFormModal {
 
   selectProject(project: Project) {
     this.form.patchValue({ projectId: project.id, projectName: project.name });
-    this.toggleProject();
-  }
-
-  toggleProject() {
-    this.isProjectSelected.set(!this.isProjectSelected());
+    this.isProjectSelected.set(true);
   }
 
   onUserTyping(event: Event) {
     const target = event.target as HTMLInputElement;
+    this.form.controls.projectId.setValue('');
+    this.isProjectSelected.set(false);
     this.filteredProjects = this.allProjects.filter((project) =>
       project.name.toLowerCase().includes(target.value.toLowerCase())
     );
-    this.toggleProject();
   }
 
   protected close(): void { this.closed.emit(); }

@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,6 +70,75 @@ class DeploymentJobWorkerTests {
         assertThat(job.getErrorMessage()).isEqualTo("Registry not allowed: registry.example.com");
         assertThat(deployment.getStatus()).isEqualTo(DeploymentStatus.FAILED);
         verify(jobRepository).save(job);
-        verify(deploymentRepository).save(deployment);
+        verify(deploymentRepository, times(2)).save(deployment);
+    }
+
+    @Test
+    void updateClearsPreviousFailureBeforeStartingRollout() throws Exception {
+        UUID jobId = UUID.randomUUID();
+        UUID deploymentId = UUID.randomUUID();
+        DeploymentJob job = DeploymentJob.builder()
+                .id(jobId)
+                .deploymentId(deploymentId)
+                .operationType(JobOperationType.UPDATE)
+                .status(JobStatus.APPLYING)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        Deployment deployment = Deployment.create();
+        deployment.setStatus(DeploymentStatus.FAILED);
+
+        when(claimService.claimNext()).thenReturn(Optional.of(jobId), Optional.empty());
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(deploymentRepository.findForJobById(deploymentId)).thenReturn(Optional.of(deployment));
+
+        DeploymentJobWorker worker = new DeploymentJobWorker(
+                jobRepository,
+                deploymentRepository,
+                kubernetesDeploymentService,
+                statusSynchronizer,
+                claimService);
+        ReflectionTestUtils.setField(worker, "maxRetries", 3);
+
+        worker.processQueuedJobs();
+
+        verify(kubernetesDeploymentService).updateSpec(deployment);
+        assertThat(deployment.getStatus()).isEqualTo(DeploymentStatus.PENDING);
+        assertThat(job.getStatus()).isEqualTo(JobStatus.ROLLING_OUT);
+    }
+
+    @Test
+    void restartStoppedDeploymentRestoresOneReplica() throws Exception {
+        UUID jobId = UUID.randomUUID();
+        UUID deploymentId = UUID.randomUUID();
+        DeploymentJob job = DeploymentJob.builder()
+                .id(jobId)
+                .deploymentId(deploymentId)
+                .operationType(JobOperationType.RESTART)
+                .status(JobStatus.APPLYING)
+                .idempotencyKey(UUID.randomUUID().toString())
+                .build();
+        Deployment deployment = Deployment.create();
+        deployment.setStatus(DeploymentStatus.STOPPED);
+        deployment.setReplicas(0);
+
+        when(claimService.claimNext()).thenReturn(Optional.of(jobId), Optional.empty());
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(deploymentRepository.findForJobById(deploymentId)).thenReturn(Optional.of(deployment));
+
+        DeploymentJobWorker worker = new DeploymentJobWorker(
+                jobRepository,
+                deploymentRepository,
+                kubernetesDeploymentService,
+                statusSynchronizer,
+                claimService);
+        ReflectionTestUtils.setField(worker, "maxRetries", 3);
+
+        worker.processQueuedJobs();
+
+        verify(kubernetesDeploymentService).scale(deployment, 1);
+        verify(kubernetesDeploymentService).restart(deployment);
+        assertThat(deployment.getReplicas()).isEqualTo(1);
+        assertThat(deployment.getStatus()).isEqualTo(DeploymentStatus.PENDING);
+        assertThat(job.getStatus()).isEqualTo(JobStatus.ROLLING_OUT);
     }
 }

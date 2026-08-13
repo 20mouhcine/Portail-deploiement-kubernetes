@@ -84,7 +84,7 @@ initialAdmin:
   password: ""
 
 cors:
-  allowedOrigins: http://kubeportal.local
+  allowedOrigins: http://kubeportal.local,http://localhost:8080
 
 sessionCookieSecure: false
 

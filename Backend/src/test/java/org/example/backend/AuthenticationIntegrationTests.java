@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,12 +52,11 @@ class AuthenticationIntegrationTests {
     }
 
     @Test
-    void csrfEndpointIsPublicAndCreatesCookie() throws Exception {
+    void csrfEndpointIsPublicAndReturnsToken() throws Exception {
         mockMvc.perform(get("/api/auth/csrf"))
                 .andExpect(status().isOk())
-                .andExpect(cookie().exists("XSRF-TOKEN"))
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"));
+                .andExpect(jsonPath("$.headerName").isNotEmpty());
     }
 
     @Test

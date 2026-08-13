@@ -85,4 +85,37 @@ describe('AuthService', () => {
     expect(result).toEqual(user);
     expect(service.isAuthenticated()).toBe(true);
   });
+
+  it('refreshes the CSRF token and retries login once after a forbidden response', () => {
+    service.login({ username: 'admin', password: 'CorrectPassword123!' }).subscribe();
+
+    http.expectOne('/api/auth/csrf').flush({
+      token: 'stale-token', headerName: 'X-XSRF-TOKEN', parameterName: '_csrf',
+    });
+    http.expectOne('/api/auth/login').flush({}, { status: 403, statusText: 'Forbidden' });
+    http.expectOne('/api/auth/csrf').flush({
+      token: 'fresh-token', headerName: 'X-XSRF-TOKEN', parameterName: '_csrf',
+    });
+    const retry = http.expectOne('/api/auth/login');
+    expect(retry.request.headers.get('X-XSRF-TOKEN')).toBe('fresh-token');
+    retry.flush({ message: 'Connexion réussie' });
+    http.expectOne('/api/auth/csrf').flush({
+      token: 'rotated-token', headerName: 'X-XSRF-TOKEN', parameterName: '_csrf',
+    });
+    http.expectOne('/api/auth/me').flush(user);
+
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('sends administrators to the operational dashboard', () => {
+    service.initialize().subscribe();
+    http.expectOne('/api/auth/csrf').flush({
+      token: 'csrf-token',
+      headerName: 'X-XSRF-TOKEN',
+      parameterName: '_csrf',
+    });
+    http.expectOne('/api/auth/me').flush(user);
+
+    expect(service.homeUrl()).toBe('/dashboard');
+  });
 });

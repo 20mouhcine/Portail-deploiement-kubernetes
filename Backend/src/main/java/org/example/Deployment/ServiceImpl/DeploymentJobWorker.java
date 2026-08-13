@@ -49,11 +49,13 @@ public class DeploymentJobWorker {
                     .orElseThrow(() -> new IllegalStateException("Déploiement introuvable"));
             switch (job.getOperationType()) {
                 case CREATE -> {
+                    markPending(deployment);
                     deployment.setAccessUrl(kubernetesDeploymentService.deploy(deployment));
                     deploymentRepository.save(deployment);
                     job.setStatus(JobStatus.ROLLING_OUT);
                 }
                 case UPDATE -> {
+                    markPending(deployment);
                     kubernetesDeploymentService.updateSpec(deployment);
                     job.setStatus(JobStatus.ROLLING_OUT);
                 }
@@ -66,6 +68,12 @@ public class DeploymentJobWorker {
                     job.setStatus(JobStatus.READY);
                 }
                 case RESTART -> {
+                    markPending(deployment);
+                    if (deployment.getReplicas() == null || deployment.getReplicas() < 1) {
+                        kubernetesDeploymentService.scale(deployment, 1);
+                        deployment.setReplicas(1);
+                        deploymentRepository.save(deployment);
+                    }
                     kubernetesDeploymentService.restart(deployment);
                     job.setStatus(JobStatus.ROLLING_OUT);
                 }
@@ -96,6 +104,11 @@ public class DeploymentJobWorker {
             }
         }
         jobRepository.save(job);
+    }
+
+    private void markPending(Deployment deployment) {
+        deployment.setStatus(DeploymentStatus.PENDING);
+        deploymentRepository.save(deployment);
     }
 
     private boolean retryable(Exception exception) {

@@ -33,13 +33,24 @@ public class DeploymentJobWatcher {
     @Value("${app.deployment.jobs.stale-after:5m}")
     private Duration staleAfter;
 
-    @Scheduled(fixedDelay = 60000) // Check every minute
+    @Scheduled(fixedDelayString = "${app.deployment.jobs.watch-delay:5000}")
     @Transactional
     public void watchRollingOutJobs() {
         claimService.recoverStaleApplying(LocalDateTime.now().minus(staleAfter), maxRetries);
         List<DeploymentJob> rollingOutJobs = jobRepository.findByStatus(JobStatus.ROLLING_OUT);
         
         for (DeploymentJob job : rollingOutJobs) {
+            boolean deploymentFailed = deploymentRepository.findById(job.getDeploymentId())
+                    .map(deployment -> deployment.getStatus() == DeploymentStatus.FAILED)
+                    .orElse(false);
+            if (deploymentFailed) {
+                log.warn("Deployment {} failed while job {} was rolling out.", job.getDeploymentId(), job.getId());
+                job.setStatus(JobStatus.FAILED);
+                job.setErrorMessage("Kubernetes rollout failed. Check the deployment logs.");
+                jobRepository.save(job);
+                continue;
+            }
+
             // If job has been rolling out for more than 5 minutes, mark as FAILED
             if (job.getUpdatedAt() != null && job.getUpdatedAt().plusMinutes(5).isBefore(LocalDateTime.now())) {
                 log.warn("Job {} timed out while ROLLING_OUT. Marking as FAILED.", job.getId());

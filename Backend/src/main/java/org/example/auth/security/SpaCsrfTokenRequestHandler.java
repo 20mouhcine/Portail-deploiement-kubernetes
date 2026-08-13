@@ -12,6 +12,9 @@ import java.util.function.Supplier;
 
 public final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
 
+    public static final String RESOLVED_TOKEN_ATTRIBUTE =
+            SpaCsrfTokenRequestHandler.class.getName() + ".RESOLVED_TOKEN";
+
     private final CsrfTokenRequestHandler plain =
             new CsrfTokenRequestAttributeHandler();
     private final CsrfTokenRequestHandler xor =
@@ -22,8 +25,9 @@ public final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler
             HttpServletRequest request,
             HttpServletResponse response,
             Supplier<CsrfToken> deferredCsrfToken) {
-        xor.handle(request, response, deferredCsrfToken);
-        deferredCsrfToken.get();
+        CsrfToken csrfToken = deferredCsrfToken.get();
+        request.setAttribute(RESOLVED_TOKEN_ATTRIBUTE, csrfToken);
+        xor.handle(request, response, () -> csrfToken);
     }
 
     @Override
