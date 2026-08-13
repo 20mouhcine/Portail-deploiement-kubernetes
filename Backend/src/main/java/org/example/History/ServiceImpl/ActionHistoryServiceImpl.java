@@ -1,6 +1,7 @@
 package org.example.History.ServiceImpl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.History.DTO.ActionHistoryResponse;
 import org.example.History.Entity.ActionHistory;
 import org.example.History.Enums.ActionType;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ActionHistoryServiceImpl implements IActionHistoryService {
@@ -47,6 +49,7 @@ public class ActionHistoryServiceImpl implements IActionHistoryService {
                         "Utilisateur introuvable pour l'enregistrement de l'historique"
                 ));
 
+
         ActionHistory history = ActionHistory.create();
         history.setAction(action);
         history.setDetails(limit(details, 1000));
@@ -54,6 +57,7 @@ public class ActionHistoryServiceImpl implements IActionHistoryService {
         history.setTargetName(limit(targetName, 255));
         history.setIpAddress(limit(ipAddress == null ? "unknown" : ipAddress, 45));
         history.setUser(user);
+        log.info("historique: {}", history);
         historyRepository.save(history);
     }
 

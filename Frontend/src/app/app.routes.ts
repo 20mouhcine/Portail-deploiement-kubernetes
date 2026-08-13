@@ -40,15 +40,7 @@ export const routes: Routes = [
           ),
         title: 'Administration | KubePortal',
       },
-      {
-        path: 'admin/users/new',
-        canActivate: [adminGuard],
-        loadComponent: () =>
-          import('./features/admin/users/pages/user-registration-page/user-registration-page').then(
-            (module) => module.UserRegistrationPage,
-          ),
-        title: 'Gestion des utilisateurs | KubePortal',
-      },
+
       {
         path: 'projects',
         loadComponent: () =>

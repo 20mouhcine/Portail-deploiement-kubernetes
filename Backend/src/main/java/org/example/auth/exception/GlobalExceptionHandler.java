@@ -84,6 +84,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "Accès refusé", request, false, Map.of());
     }
 
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsableException(org.springframework.web.context.request.async.AsyncRequestNotUsableException exception, HttpServletRequest request) {
+        log.warn("Client disconnected during async request for {}", request.getRequestURI());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         log.error("Unexpected error for {}", request.getRequestURI(), exception);

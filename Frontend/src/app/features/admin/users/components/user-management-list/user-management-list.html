@@ -7,11 +7,19 @@
     <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm" aria-label="Mode d'affichage">
       <button type="button" (click)="setViewMode('cards')"
         [class]="viewMode() === 'cards' ? 'rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
-        Cartes
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-3.5 w-3.5">
+          <rect x="96" y="96" width="192" height="192" rx="32" fill="currentColor" />
+          <rect x="352" y="96" width="192" height="192" rx="32" fill="currentColor" />
+          <rect x="96" y="352" width="192" height="192" rx="32" fill="currentColor" />
+          <rect x="352" y="352" width="192" height="192" rx="32" fill="currentColor" />
+        </svg>
       </button>
       <button type="button" (click)="setViewMode('list')"
         [class]="viewMode() === 'list' ? 'rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
-        Liste
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-3.5 w-3.5">
+          <path fill="currentColor"
+            d="M104 112C90.7 112 80 122.7 80 136L80 184C80 197.3 90.7 208 104 208L152 208C165.3 208 176 197.3 176 184L176 136C176 122.7 165.3 112 152 112L104 112zM256 128C238.3 128 224 142.3 224 160C224 177.7 238.3 192 256 192L544 192C561.7 192 576 177.7 576 160C576 142.3 561.7 128 544 128L256 128zM256 288C238.3 288 224 302.3 224 320C224 337.7 238.3 352 256 352L544 352C561.7 352 576 337.7 576 320C576 302.3 561.7 288 544 288L256 288zM256 448C238.3 448 224 462.3 224 480C224 497.7 238.3 512 256 512L544 512C561.7 512 576 497.7 576 480C576 462.3 561.7 448 544 448L256 448zM80 296L80 344C80 357.3 90.7 368 104 368L152 368C165.3 368 176 357.3 176 344L176 296C176 282.7 165.3 272 152 272L104 272C90.7 282.7 80 282.7 80 296zM104 432C90.7 432 80 442.7 80 456L80 504C80 517.3 90.7 528 104 528L152 528C165.3 528 176 517.3 176 504L176 456C176 442.7 165.3 432 152 432L104 432z" />
+        </svg>
       </button>
     </div>
   </div>
@@ -25,7 +33,8 @@
           <h3 class="truncate font-bold text-slate-900">{{ user.username }}</h3>
           <p class="mt-1 truncate text-sm text-slate-500">{{ user.email }}</p>
         </div>
-        <span [class]="user.enabled ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700'">
+        <span
+          [class]="user.enabled ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700' : 'rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700'">
           {{ user.enabled ? 'Actif' : 'Désactivé' }}
         </span>
       </div>
@@ -51,18 +60,37 @@
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
         <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <tr><th class="px-5 py-3">Utilisateur</th><th class="px-5 py-3">Rôles</th><th class="px-5 py-3">Statut</th><th class="px-5 py-3 text-right">Actions</th></tr>
+          <tr>
+            <th class="px-5 py-3">Utilisateur</th>
+            <th class="px-5 py-3">Rôles</th>
+            <th class="px-5 py-3">Statut</th>
+            <th class="px-5 py-3 text-right">Actions</th>
+          </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           @for (user of users(); track user.id) {
           <tr class="transition hover:bg-slate-50/70">
-            <td class="px-5 py-4"><p class="font-semibold text-slate-900">{{ user.username }}</p><p class="mt-1 text-xs text-slate-500">{{ user.email }}</p></td>
-            <td class="px-5 py-4"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) { <app-role-badge [role]="role" /> }</div></td>
-            <td class="px-5 py-4"><span [class]="user.enabled ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'">{{ user.enabled ? 'Actif' : 'Désactivé' }}</span></td>
-            <td class="px-5 py-4"><div class="flex justify-end gap-2">
-              <button type="button" (click)="openEditor(user)" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">Modifier</button>
-              <button type="button" (click)="toggleStatus(user)" [disabled]="user.id === currentUserId() || loadingUserId() === user.id" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45">{{ user.enabled ? 'Désactiver' : 'Activer' }}</button>
-            </div></td>
+            <td class="px-5 py-4">
+              <p class="font-semibold text-slate-900">{{ user.username }}</p>
+              <p class="mt-1 text-xs text-slate-500">{{ user.email }}</p>
+            </td>
+            <td class="px-5 py-4">
+              <div class="flex flex-wrap gap-1">@for (role of user.roles; track role) { <app-role-badge [role]="role" />
+                }</div>
+            </td>
+            <td class="px-5 py-4"><span
+                [class]="user.enabled ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'">{{ user.enabled
+                ? 'Actif' : 'Désactivé' }}</span></td>
+            <td class="px-5 py-4">
+              <div class="flex justify-end gap-2">
+                <button type="button" (click)="openEditor(user)"
+                  class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700">Modifier</button>
+                <button type="button" (click)="toggleStatus(user)"
+                  [disabled]="user.id === currentUserId() || loadingUserId() === user.id"
+                  class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45">{{
+                  user.enabled ? 'Désactiver' : 'Activer' }}</button>
+              </div>
+            </td>
           </tr>
           }
         </tbody>
@@ -74,10 +102,15 @@
 
 @if (editingUser(); as user) {
 <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" (click)="closeEditor()">
-  <section class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <section class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true"
+    (click)="$event.stopPropagation()">
     <div class="flex items-start justify-between gap-4">
-      <div><p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Modifier les rôles</p><h2 class="mt-1 text-xl font-bold text-slate-950">{{ user.username }}</h2></div>
-      <button type="button" (click)="closeEditor()" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Fermer">✕</button>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Modifier les rôles</p>
+        <h2 class="mt-1 text-xl font-bold text-slate-950">{{ user.username }}</h2>
+      </div>
+      <button type="button" (click)="closeEditor()"
+        class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Fermer">✕</button>
     </div>
     <div class="mt-6 space-y-2">
       @for (role of availableRoles; track role) {
@@ -87,10 +120,13 @@
       </button>
       }
     </div>
-    @if (selectedRoles().length === 0) { <p class="mt-3 text-xs font-medium text-red-600">Sélectionnez au moins un rôle.</p> }
+    @if (selectedRoles().length === 0) { <p class="mt-3 text-xs font-medium text-red-600">Sélectionnez au moins un rôle.
+    </p> }
     <div class="mt-6 flex justify-end gap-3">
-      <button type="button" (click)="closeEditor()" class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button>
-      <button type="button" (click)="saveRoles()" [disabled]="selectedRoles().length === 0" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Enregistrer</button>
+      <button type="button" (click)="closeEditor()"
+        class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Annuler</button>
+      <button type="button" (click)="saveRoles()" [disabled]="selectedRoles().length === 0"
+        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Enregistrer</button>
     </div>
   </section>
 </div>

@@ -14,6 +14,7 @@ export class HistoryEntry {
   readonly entry = input.required<ActionHistory>();
   readonly last = input(false);
 
+
   protected readonly iconClasses = computed(() => ({
     CREATE: 'bg-emerald-50 text-emerald-600', UPDATE: 'bg-blue-50 text-blue-600',
     DELETE: 'bg-red-50 text-red-600', RESTART: 'bg-violet-50 text-violet-600',

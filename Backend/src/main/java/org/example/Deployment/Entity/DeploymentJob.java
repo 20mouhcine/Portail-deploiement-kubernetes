@@ -58,5 +58,6 @@ public class DeploymentJob {
     private LocalDateTime updatedAt;
 
     @Version
+    @Column(columnDefinition = "bigint default 0", nullable = false)
     private long version;
 }
