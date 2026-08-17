@@ -23,7 +23,7 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     private static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     private static final String MANAGED_BY_VALUE = "kubeportal";
     private static final String DEPLOYMENT_ID_LABEL = "kubeportal.io/deployment-id";
-    private static final List<String> ALLOWED_REGISTRIES = List.of("docker.io", "gcr.io", "ghcr.io", "quay.io", "registry.k8s.io");
+    private static final List<String> ALLOWED_REGISTRIES = List.of("docker.io", "gcr.io", "ghcr.io", "quay.io", "registry.k8s.io","dhi.io");
 
     @Override
     public String deploy(Deployment deployment) throws InterruptedException {
@@ -120,7 +120,7 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withImage(deployment.getImage())
                 .withNewSecurityContext()
                     .withAllowPrivilegeEscalation(false)
-                    .withReadOnlyRootFilesystem(true)
+                    .withReadOnlyRootFilesystem(false)
                     .withNewCapabilities().addToDrop("ALL").endCapabilities()
                 .endSecurityContext()
                 .addNewVolumeMount()

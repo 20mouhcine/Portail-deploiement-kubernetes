@@ -108,6 +108,7 @@ export class DeploymentsPage {
   protected confirmDelete(): void {
     const deployment = this.deploymentToDelete();
     if (deployment) {
+      console.log('Deleting deployment:', deployment.id);
       this.runAction(this.service.delete(deployment.id), () => this.cancelDelete());
     }
   }

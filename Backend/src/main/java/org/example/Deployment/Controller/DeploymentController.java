@@ -3,6 +3,7 @@ package org.example.Deployment.Controller;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.Deployment.DTO.ApiResponse;
 import org.example.Deployment.DTO.CreateDeploymentRequest;
 import org.example.Deployment.DTO.DeploymentDetailResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/deployments")
 @RequiredArgsConstructor
@@ -177,6 +179,7 @@ public class DeploymentController {
     ) {
         DeploymentResponse deployment = deploymentService.delete(id);
         record(ActionType.DELETE, "Suppression du déploiement", deployment, authentication, httpRequest);
+        log.info("deleting deployment {}", deployment);
         return ResponseEntity.ok(ApiResponse.success(
                 "Déploiement supprimé avec succès",
                 deployment

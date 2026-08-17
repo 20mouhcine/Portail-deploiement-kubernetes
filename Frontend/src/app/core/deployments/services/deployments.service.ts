@@ -115,6 +115,7 @@ export class DeploymentsService {
   }
 
   delete(id: string): Observable<Deployment> {
+    console.log('Deleting deployment service:', id);
     return this.http.delete<ApiResponse<Deployment>>(`${this.apiUrl}/${id}`).pipe(
       map(response => response.data),
       tap(() => this.refresh()),
