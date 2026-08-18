@@ -1,19 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { CurrentUser, RoleName } from '../../../../../core/auth/models/auth.models';
 import { AuthService } from '../../../../../core/auth/services/auth.service';
 import { CreateUserRequest } from '../../../../../core/users/models/admin-user.models';
 import { AdminUserService } from '../../../../../core/users/services/admin-user.service';
-import { RoleBadge } from '../../../../../shared/components/role-badge/role-badge';
 import { StatusCard } from '../../../../../shared/components/status-card/status-card';
 import { UserRegistrationForm } from '../../../users/components/user-registration-form/user-registration-form';
 import { UserManagementList } from '../../../users/components/user-management-list/user-management-list';
 
 @Component({
   selector: 'app-admin-dashboard-page',
-  imports: [RouterLink, RoleBadge, StatusCard, UserRegistrationForm, UserManagementList],
+  imports: [StatusCard, UserRegistrationForm, UserManagementList],
   templateUrl: './admin-dashboard-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
