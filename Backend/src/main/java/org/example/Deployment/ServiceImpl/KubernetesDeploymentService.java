@@ -23,7 +23,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     private static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     private static final String MANAGED_BY_VALUE = "kubeportal";
     private static final String DEPLOYMENT_ID_LABEL = "kubeportal.io/deployment-id";
-    private static final List<String> ALLOWED_REGISTRIES = List.of("docker.io", "gcr.io", "ghcr.io", "quay.io", "registry.k8s.io","dhi.io");
+    private static final List<String> ALLOWED_REGISTRIES = List.of("docker.io", "gcr.io", "ghcr.io", "quay.io",
+            "registry.k8s.io", "dhi.io");
 
     @Override
     public String deploy(Deployment deployment) throws InterruptedException {
@@ -79,7 +80,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
         return buildAccessUrl(created);
     }
 
-    private io.fabric8.kubernetes.api.model.apps.Deployment buildDeploymentManifest(Deployment deployment, String saName) {
+    private io.fabric8.kubernetes.api.model.apps.Deployment buildDeploymentManifest(Deployment deployment,
+            String saName) {
         return new DeploymentBuilder()
                 .withNewMetadata()
                 .withName(deployment.getName())
@@ -87,8 +89,10 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .addToLabels("deployment-id", deployment.getId().toString())
                 .addToLabels(MANAGED_BY_LABEL, MANAGED_BY_VALUE)
                 .addToLabels(DEPLOYMENT_ID_LABEL, deployment.getId().toString())
-                .addToLabels("project-id", deployment.getProject() != null ? deployment.getProject().getId().toString() : "none")
-                .addToLabels("deployed-by", deployment.getDeployedBy() != null ? deployment.getDeployedBy().getUsername() : "system")
+                .addToLabels("project-id",
+                        deployment.getProject() != null ? deployment.getProject().getId().toString() : "none")
+                .addToLabels("deployed-by",
+                        deployment.getDeployedBy() != null ? deployment.getDeployedBy().getUsername() : "system")
                 .endMetadata()
                 .withNewSpec()
                 .withReplicas(deployment.getReplicas())
@@ -106,26 +110,26 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withNewSpec()
                 .withServiceAccountName(saName)
                 .withNewSecurityContext()
-                    .withRunAsNonRoot(true)
-                    .withRunAsUser(10001L) // Must not be 0
-                    .withFsGroup(10001L)
+                .withRunAsNonRoot(true)
+                .withRunAsUser(10001L) // Must not be 0
+                .withFsGroup(10001L)
                 .endSecurityContext()
                 .addNewVolume()
-                    .withName("runtime-tmp")
-                    .withNewEmptyDir()
-                    .endEmptyDir()
+                .withName("runtime-tmp")
+                .withNewEmptyDir()
+                .endEmptyDir()
                 .endVolume()
                 .addNewContainer()
                 .withName(deployment.getName())
                 .withImage(deployment.getImage())
                 .withNewSecurityContext()
-                    .withAllowPrivilegeEscalation(false)
-                    .withReadOnlyRootFilesystem(false)
-                    .withNewCapabilities().addToDrop("ALL").endCapabilities()
+                .withAllowPrivilegeEscalation(false)
+                .withReadOnlyRootFilesystem(false)
+                .withNewCapabilities().addToDrop("ALL").endCapabilities()
                 .endSecurityContext()
                 .addNewVolumeMount()
-                    .withName("runtime-tmp")
-                    .withMountPath("/tmp")
+                .withName("runtime-tmp")
+                .withMountPath("/tmp")
                 .endVolumeMount()
                 .addNewPort().withContainerPort(deployment.getPort()).endPort()
                 .withNewResources()
@@ -135,16 +139,16 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .addToLimits("memory", new Quantity(deployment.getMemory()))
                 .endResources()
                 .withNewLivenessProbe()
-                    .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
-                    .withInitialDelaySeconds(15).withPeriodSeconds(20)
+                .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
+                .withInitialDelaySeconds(15).withPeriodSeconds(20)
                 .endLivenessProbe()
                 .withNewReadinessProbe()
-                    .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
-                    .withInitialDelaySeconds(5).withPeriodSeconds(10)
+                .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
+                .withInitialDelaySeconds(5).withPeriodSeconds(10)
                 .endReadinessProbe()
                 .withNewStartupProbe()
-                    .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
-                    .withInitialDelaySeconds(5).withPeriodSeconds(10).withFailureThreshold(30)
+                .withNewTcpSocket().withNewPort(deployment.getPort()).endTcpSocket()
+                .withInitialDelaySeconds(5).withPeriodSeconds(10).withFailureThreshold(30)
                 .endStartupProbe()
                 .addAllToEnv(toEnvVarList(deployment))
                 .endContainer()
@@ -159,36 +163,42 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withNewMetadata().withName(saName).withNamespace(deployment.getNamespace()).endMetadata()
                 .withAutomountServiceAccountToken(false)
                 .build();
-        kubernetesClient.serviceAccounts().inNamespace(deployment.getNamespace()).resource(sa).createOr(existing -> existing.update());
+        kubernetesClient.serviceAccounts().inNamespace(deployment.getNamespace()).resource(sa)
+                .createOr(existing -> existing.update());
     }
 
     private void createNetworkPolicy(Deployment deployment) {
         NetworkPolicy netPolicy = new NetworkPolicyBuilder()
-                .withNewMetadata().withName(deployment.getName() + "-netpol").withNamespace(deployment.getNamespace()).endMetadata()
+                .withNewMetadata().withName(deployment.getName() + "-netpol").withNamespace(deployment.getNamespace())
+                .endMetadata()
                 .withNewSpec()
                 .withNewPodSelector().addToMatchLabels("app", deployment.getName()).endPodSelector()
                 .withPolicyTypes("Ingress", "Egress")
                 .addNewEgress().endEgress()
                 .endSpec()
                 .build();
-        kubernetesClient.network().networkPolicies().inNamespace(deployment.getNamespace()).resource(netPolicy).createOr(existing -> existing.update());
+        kubernetesClient.network().networkPolicies().inNamespace(deployment.getNamespace()).resource(netPolicy)
+                .createOr(existing -> existing.update());
     }
 
     private void validateDeploymentConfig(Deployment deployment) {
         if (deployment.getImage() == null || deployment.getImage().isBlank()) {
             throw new IllegalArgumentException("Image is required");
         }
-        
-        String imagePrefix = deployment.getImage().contains("/") ? deployment.getImage().substring(0, deployment.getImage().indexOf("/")) : "";
+
+        String imagePrefix = deployment.getImage().contains("/")
+                ? deployment.getImage().substring(0, deployment.getImage().indexOf("/"))
+                : "";
         if (!imagePrefix.isEmpty() && !imagePrefix.contains(".")) {
             // Implicit docker.io
             imagePrefix = "docker.io";
         } else if (imagePrefix.isEmpty()) {
             imagePrefix = "docker.io";
         }
-        
+
         String finalPrefix = imagePrefix;
-        boolean allowed = ALLOWED_REGISTRIES.stream().anyMatch(registry -> finalPrefix.equalsIgnoreCase(registry) || finalPrefix.endsWith("." + registry));
+        boolean allowed = ALLOWED_REGISTRIES.stream()
+                .anyMatch(registry -> finalPrefix.equalsIgnoreCase(registry) || finalPrefix.endsWith("." + registry));
         if (!allowed) {
             throw new IllegalArgumentException("Image registry not allowed. Allowed registries: " + ALLOWED_REGISTRIES);
         }
@@ -204,7 +214,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 if (val > max) {
                     throw new IllegalArgumentException(name + " limit exceeds maximum allowed (" + max + suffix + ")");
                 }
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
     }
 
@@ -214,26 +225,32 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
         }
 
         Integer nodePort = service.getSpec().getPorts().get(0).getNodePort();
-        if (nodePort == null) return null;
+        if (nodePort == null)
+            return null;
 
         return "http://" + getNodeIp() + ":" + nodePort;
     }
-    
+
     private List<EnvVar> toEnvVarList(Deployment deployment) {
         Map<String, String> envVariables = deployment.getEnvVariables();
         Map<String, String> secretReferences = deployment.getSecretVariables();
         var variables = new java.util.ArrayList<EnvVar>();
-        if (envVariables != null) envVariables.forEach((name, value) -> variables.add(new EnvVar(name, value, null)));
-        if (secretReferences != null) secretReferences.forEach((environmentName, reference) -> {
-            String[] parts = reference.split("/", 2);
-            if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) throw new IllegalArgumentException("Reference de secret invalide pour " + environmentName);
-            variables.add(new EnvVarBuilder().withName(environmentName).withNewValueFrom().withNewSecretKeyRef().withName(parts[0]).withKey(parts[1]).endSecretKeyRef().endValueFrom().build());
-        });
+        if (envVariables != null)
+            envVariables.forEach((name, value) -> variables.add(new EnvVar(name, value, null)));
+        if (secretReferences != null)
+            secretReferences.forEach((environmentName, reference) -> {
+                String[] parts = reference.split("/", 2);
+                if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank())
+                    throw new IllegalArgumentException("Reference de secret invalide pour " + environmentName);
+                variables.add(new EnvVarBuilder().withName(environmentName).withNewValueFrom().withNewSecretKeyRef()
+                        .withName(parts[0]).withKey(parts[1]).endSecretKeyRef().endValueFrom().build());
+            });
         return variables;
     }
 
     private void validateSecretReferencesExist(Deployment deployment) {
-        if (deployment.getSecretVariables() == null) return;
+        if (deployment.getSecretVariables() == null)
+            return;
         deployment.getSecretVariables().forEach((environmentName, reference) -> {
             String[] parts = reference.split("/", 2);
             Secret secret = kubernetesClient.secrets().inNamespace(deployment.getNamespace())
@@ -245,7 +262,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
     }
 
     private void assertOwned(HasMetadata resource, Deployment deployment) {
-        if (resource == null) return;
+        if (resource == null)
+            return;
         Map<String, String> labels = resource.getMetadata() == null ? null : resource.getMetadata().getLabels();
         boolean owned = labels != null && (deployment.getId().toString().equals(labels.get(DEPLOYMENT_ID_LABEL))
                 || deployment.getId().toString().equals(labels.get("deployment-id")));
@@ -261,7 +279,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withName(deployment.getName())
                 .get();
 
-        if (service == null) return null;
+        if (service == null)
+            return null;
 
         return buildAccessUrl(service);
     }
@@ -274,18 +293,20 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .findFirst()
                 .orElse(URI.create(kubernetesClient.getMasterUrl().toString()).getHost());
     }
-    
+
     public String getStatus(Deployment deployment) {
         io.fabric8.kubernetes.api.model.apps.Deployment d = kubernetesClient.apps().deployments()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName())
                 .get();
 
-        if (d == null) return "UNKNOWN";
+        if (d == null)
+            return "UNKNOWN";
 
         int desired = d.getSpec().getReplicas();
         int available = d.getStatus().getAvailableReplicas() != null
-                ? d.getStatus().getAvailableReplicas() : 0;
+                ? d.getStatus().getAvailableReplicas()
+                : 0;
 
         return available == desired ? "RUNNING" : "PENDING";
     }
@@ -379,12 +400,12 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName())
                 .delete();
-                
+
         kubernetesClient.serviceAccounts()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName() + "-sa")
                 .delete();
-                
+
         kubernetesClient.network().networkPolicies()
                 .inNamespace(deployment.getNamespace())
                 .withName(deployment.getName() + "-netpol")
@@ -393,7 +414,8 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
 
     public String getLogs(Deployment deployment) {
         List<Pod> pods = getPods(deployment);
-        if (pods.isEmpty()) return "";
+        if (pods.isEmpty())
+            return "";
 
         String podName = pods.get(0).getMetadata().getName();
         return kubernetesClient.pods()

@@ -6,9 +6,8 @@ imagePullSecrets: []
 backend:
   replicaCount: 1
   image:
-    repository: kubeportal-backend
-    tag: latest
-    pullPolicy: IfNotPresent
+    repository: mouhcine884/kubeportal-backend
+
   service:
     type: ClusterIP
     port: 8080
@@ -27,9 +26,7 @@ backend:
 frontend:
   replicaCount: 1
   image:
-    repository: kubeportal-frontend
-    tag: latest
-    pullPolicy: IfNotPresent
+    repository: mouhcine884/kubeportal-frontend
   service:
     type: ClusterIP
     port: 80

@@ -24,6 +24,7 @@ public class DeploymentStatusSynchronizer {
     private final ConcurrentMap<UUID, Boolean> stoppedDeployments = new ConcurrentHashMap<>();
     private final DeploymentRepository deploymentRepository;
     private final IDeploymentEventService deploymentEventService;
+    private final org.example.Deployment.Service.IKubernetesDeploymentService kubernetesDeploymentService;
 
     @Transactional
     public void markFailed(UUID deploymentId) {
@@ -32,6 +33,11 @@ public class DeploymentStatusSynchronizer {
         }
 
         deploymentRepository.findById(deploymentId).ifPresent(deployment -> {
+            String k8sStatus = kubernetesDeploymentService.getStatus(deployment);
+            if ("RUNNING".equals(k8sStatus)) {
+                return;
+            }
+
             recordStatus(deploymentId, DeploymentStatus.FAILED);
             if (deployment.getStatus() == DeploymentStatus.FAILED) {
                 return;

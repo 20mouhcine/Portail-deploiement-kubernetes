@@ -1,0 +1,43 @@
+name: Deploy to Azure VM
+
+on:
+  workflow_run:
+    workflows: ["Frontend CI", "Backend CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy Helm chart to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          source: "helm/kubeportal/*"
+          target: "/tmp"
+
+      - name: Deploy via Helm on K3s
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          script: |
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+            
+            # Upgrade or install the helm chart
+            helm upgrade --install kubeportal /tmp/helm/kubeportal \
+              --namespace kubeportal --create-namespace \
+              --set frontend.image.tag=latest \
+              --set backend.image.tag=latest
+            
+            # Force a rollout restart to ensure the latest images are pulled from Docker Hub
+            kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
+            kubectl rollout restart deployment kubeportal-backend -n kubeportal || true

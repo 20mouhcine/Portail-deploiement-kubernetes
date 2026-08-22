@@ -4,6 +4,7 @@ import org.example.Deployment.Entity.Deployment;
 import org.example.Deployment.Enums.DeploymentStatus;
 import org.example.Deployment.Repository.DeploymentRepository;
 import org.example.Deployment.Service.IDeploymentEventService;
+import org.example.Deployment.Service.IKubernetesDeploymentService;
 import org.example.Deployment.ServiceImpl.DeploymentStatusSynchronizer;
 import org.example.Projects.Entity.Project;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class DeploymentStatusSynchronizerTests {
     @Mock
     IDeploymentEventService deploymentEventService;
 
+    @Mock
+    IKubernetesDeploymentService kubernetesDeploymentService;
+
     @Test
     void marksTheDeploymentAsFailedAndPublishesTheStatusChange() {
         UUID deploymentId = UUID.randomUUID();
@@ -38,8 +42,9 @@ class DeploymentStatusSynchronizerTests {
         deployment.setProject(project);
         deployment.setStatus(DeploymentStatus.RUNNING);
         when(deploymentRepository.findById(deploymentId)).thenReturn(Optional.of(deployment));
+        when(kubernetesDeploymentService.getStatus(deployment)).thenReturn("FAILED");
         DeploymentStatusSynchronizer synchronizer =
-                new DeploymentStatusSynchronizer(deploymentRepository, deploymentEventService);
+                new DeploymentStatusSynchronizer(deploymentRepository, deploymentEventService, kubernetesDeploymentService);
 
         synchronizer.markFailed(deploymentId);
 
@@ -55,8 +60,9 @@ class DeploymentStatusSynchronizerTests {
         Deployment deployment = Deployment.create();
         deployment.setStatus(DeploymentStatus.FAILED);
         when(deploymentRepository.findById(deploymentId)).thenReturn(Optional.of(deployment));
+        when(kubernetesDeploymentService.getStatus(deployment)).thenReturn("FAILED");
         DeploymentStatusSynchronizer synchronizer =
-                new DeploymentStatusSynchronizer(deploymentRepository, deploymentEventService);
+                new DeploymentStatusSynchronizer(deploymentRepository, deploymentEventService, kubernetesDeploymentService);
 
         synchronizer.markFailed(deploymentId);
 
