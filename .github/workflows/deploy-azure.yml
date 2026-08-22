@@ -30,14 +30,14 @@ jobs:
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.AZURE_VM_SSH_KEY }}
           script: |
-            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+           sudo export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             
             # Upgrade or install the helm chart
-            helm upgrade --install kubeportal /tmp/helm/kubeportal \
+           sudo  helm upgrade --install kubeportal /tmp/helm/kubeportal \
               --namespace kubeportal --create-namespace \
               --set frontend.image.tag=latest \
               --set backend.image.tag=latest
             
             # Force a rollout restart to ensure the latest images are pulled from Docker Hub
-            kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
-            kubectl rollout restart deployment kubeportal-backend -n kubeportal || true
+           sudo  kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
+           sudo  kubectl rollout restart deployment kubeportal-backend -n kubeportal || true
