@@ -174,6 +174,12 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
                 .withNewSpec()
                 .withNewPodSelector().addToMatchLabels("app", deployment.getName()).endPodSelector()
                 .withPolicyTypes("Ingress", "Egress")
+                .addNewIngress()
+                .addNewPort()
+                .withProtocol("TCP")
+                .withPort(new IntOrString(deployment.getPort()))
+                .endPort()
+                .endIngress()
                 .addNewEgress().endEgress()
                 .endSpec()
                 .build();
