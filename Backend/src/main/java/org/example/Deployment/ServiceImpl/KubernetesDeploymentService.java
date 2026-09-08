@@ -39,6 +39,7 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
         createServiceAccount(deployment, saName);
         createNetworkPolicy(deployment);
 
+
         io.fabric8.kubernetes.api.model.apps.Deployment k8sDeployment = buildDeploymentManifest(deployment, saName);
 
         kubernetesClient.apps().deployments()

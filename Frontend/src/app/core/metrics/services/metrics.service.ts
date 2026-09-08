@@ -34,6 +34,8 @@ export class MetricsService {
     this.stopStreaming();
     this.error.set(null);
 
+    console.log("getClusterMetrics:", this.getClusterMetrics());
+
     // Fetch initial snapshot via REST API so UI updates immediately
     this.getClusterMetrics().subscribe({
       next: (data) => {
