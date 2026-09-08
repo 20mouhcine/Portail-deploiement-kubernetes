@@ -13,10 +13,11 @@ import { ProjectsService } from '../../../../core/projects/services/projects.ser
 import { StatusCard } from '../../../../shared/components/status-card/status-card';
 import { DeploymentFormModal } from '../../../deployments/components/deployment-form-modal/deployment-form-modal';
 import { ActionTypeBadge } from '../../../history/components/action-type-badge/action-type-badge';
+import { ClusterMetricsCard } from '../../components/cluster-metrics-card/cluster-metrics-card';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, RouterLink, StatusCard, DeploymentFormModal, ActionTypeBadge],
+  imports: [DatePipe, RouterLink, StatusCard, DeploymentFormModal, ActionTypeBadge, ClusterMetricsCard],
   templateUrl: './dashboard-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

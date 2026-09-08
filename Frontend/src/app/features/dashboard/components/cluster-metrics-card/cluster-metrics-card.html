@@ -1,0 +1,158 @@
+<article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <h2 class="font-bold text-slate-950">Métriques du Cluster</h2>
+        @if (connected()) {
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          <span class="relative flex size-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
+          </span>
+          En direct
+        </span>
+        } @else {
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+          <span class="size-2 rounded-full bg-slate-400"></span>
+          Hors ligne
+        </span>
+        }
+      </div>
+      <p class="mt-1 text-sm text-slate-500">Consommation CPU et Mémoire en temps réel via Kubernetes Metrics Server.
+      </p>
+    </div>
+    @if (metrics(); as data) {
+    <span class="text-xs font-mono text-slate-400">Dernière MàJ: {{ data.timestamp | date:'HH:mm:ss' }}</span>
+    }
+  </div>
+
+  @if (error()) {
+  <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+    {{ error() }}
+  </div>
+  }
+
+  @if (metrics(); as data) {
+  <div class="mt-6 grid gap-5 md:grid-cols-2">
+    <!-- CPU Usage Card -->
+    <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:bg-slate-50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="flex size-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Utilisation CPU</p>
+            <p class="text-sm font-semibold text-slate-800">
+              {{ formatCpu(data.usedCpuMillicores) }} / {{ formatCpu(data.totalCpuMillicores) }}
+            </p>
+          </div>
+        </div>
+        <span class="rounded-full px-2.5 py-1 text-xs font-bold" [ngClass]="{
+            'bg-emerald-100 text-emerald-700': getPercentageTone(data.cpuPercentage) === 'emerald',
+            'bg-amber-100 text-amber-700': getPercentageTone(data.cpuPercentage) === 'amber',
+            'bg-rose-100 text-rose-700': getPercentageTone(data.cpuPercentage) === 'rose'
+          }">
+          {{ data.cpuPercentage.toFixed(1) }}%
+        </span>
+      </div>
+      <!-- Progress bar -->
+      <div class="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+        <div class="h-full rounded-full transition-all duration-500 ease-out" [style.width.%]="data.cpuPercentage"
+          [ngClass]="{
+            'bg-emerald-500': getPercentageTone(data.cpuPercentage) === 'emerald',
+            'bg-amber-500': getPercentageTone(data.cpuPercentage) === 'amber',
+            'bg-rose-500': getPercentageTone(data.cpuPercentage) === 'rose'
+          }">
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory Usage Card -->
+    <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:bg-slate-50">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="flex size-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Utilisation Mémoire</p>
+            <p class="text-sm font-semibold text-slate-800">
+              {{ formatMemory(data.usedMemoryMi) }} / {{ formatMemory(data.totalMemoryMi) }}
+            </p>
+          </div>
+        </div>
+        <span class="rounded-full px-2.5 py-1 text-xs font-bold" [ngClass]="{
+            'bg-emerald-100 text-emerald-700': getPercentageTone(data.memoryPercentage) === 'emerald',
+            'bg-amber-100 text-amber-700': getPercentageTone(data.memoryPercentage) === 'amber',
+            'bg-rose-100 text-rose-700': getPercentageTone(data.memoryPercentage) === 'rose'
+          }">
+          {{ data.memoryPercentage.toFixed(1) }}%
+        </span>
+      </div>
+      <!-- Progress bar -->
+      <div class="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+        <div class="h-full rounded-full transition-all duration-500 ease-out" [style.width.%]="data.memoryPercentage"
+          [ngClass]="{
+            'bg-emerald-500': getPercentageTone(data.memoryPercentage) === 'emerald',
+            'bg-amber-500': getPercentageTone(data.memoryPercentage) === 'amber',
+            'bg-rose-500': getPercentageTone(data.memoryPercentage) === 'rose'
+          }">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nodes breakdown if multiple nodes exist -->
+  @if (data.nodes && data.nodes.length > 0) {
+  <div class="mt-5 border-t border-slate-100 pt-4">
+    <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Nœuds du Cluster ({{ data.nodes.length
+      }})</p>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      @for (node of data.nodes; track node.name) {
+      <div class="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs">
+        <div class="flex items-center justify-between font-semibold text-slate-700 mb-1.5">
+          <span class="truncate">{{ node.name }}</span>
+        </div>
+        <div class="space-y-1.5">
+          <div>
+            <div class="flex justify-between text-slate-500 mb-0.5">
+              <span>CPU</span>
+              <span>{{ node.cpuPercentage.toFixed(1) }}%</span>
+            </div>
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+              <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="node.cpuPercentage"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-500 mb-0.5">
+              <span>RAM</span>
+              <span>{{ node.memoryPercentage.toFixed(1) }}%</span>
+            </div>
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+              <div class="h-full bg-indigo-500 transition-all duration-300" [style.width.%]="node.memoryPercentage">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  } @else {
+  <div class="mt-6 flex flex-col items-center justify-center py-8 text-slate-400">
+    <div class="size-7 animate-spin rounded-full border-3 border-slate-200 border-t-blue-600"></div>
+    <p class="mt-3 text-xs font-medium">Chargement des métriques...</p>
+  </div>
+  }
+</article>

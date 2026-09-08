@@ -234,7 +234,7 @@ public class KubernetesDeploymentService implements IKubernetesDeploymentService
         if (nodePort == null)
             return null;
 
-        return "http://" + getNodeIp() + ":" + nodePort;
+        return "http://158.158.9.71" + ":" + nodePort;
     }
 
     private List<EnvVar> toEnvVarList(Deployment deployment) {
