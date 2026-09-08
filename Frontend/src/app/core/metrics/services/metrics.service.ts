@@ -34,6 +34,19 @@ export class MetricsService {
     this.stopStreaming();
     this.error.set(null);
 
+    // Fetch initial snapshot via REST API so UI updates immediately
+    this.getClusterMetrics().subscribe({
+      next: (data) => {
+        this.metrics.set(data);
+        this.connected.set(true);
+      },
+      error: (err) => {
+        if (!this.metrics()) {
+          this.error.set('Impossible de charger les métriques du cluster.');
+        }
+      }
+    });
+
     const url = `${this.apiUrl}/stream`;
     this.eventSource = new EventSource(url, { withCredentials: true });
 
@@ -56,8 +69,10 @@ export class MetricsService {
 
     this.eventSource.onerror = () => {
       this.zone.run(() => {
-        this.connected.set(false);
-        this.error.set('Connexion aux métriques perdue. Tentative de reconnexion...');
+        if (!this.metrics()) {
+          this.connected.set(false);
+          this.error.set('Connexion aux métriques perdue. Tentative de reconnexion...');
+        }
       });
     };
   }

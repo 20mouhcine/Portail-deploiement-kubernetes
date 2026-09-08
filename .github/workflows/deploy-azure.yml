@@ -41,3 +41,4 @@ jobs:
             # Force a rollout restart to ensure the latest images are pulled from Docker Hub
            sudo  kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
            sudo  kubectl rollout restart deployment kubeportal-backend -n kubeportal || true
+           nohup sudo kubectl port-forward -n kubeportal service/kubeportal-frontend --address 0.0.0.0 8080:80
