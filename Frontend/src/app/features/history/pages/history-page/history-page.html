@@ -33,9 +33,11 @@
       <div class="mt-1 flex items-center gap-2">
         <p class="text-sm text-slate-500">{{ filteredEntries().length }} résultat(s)</p>
         @if (dateFilter()) {
-        <span class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+        <span
+          class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
           {{ isTodaySelected() ? "Aujourd'hui" : (dateFilter() | date:'dd/MM/yyyy') }}
-          <button type="button" (click)="clearDateFilter()" class="hover:text-blue-900" title="Effacer la date">✕</button>
+          <button type="button" (click)="clearDateFilter()" class="hover:text-blue-900"
+            title="Effacer la date">✕</button>
         </span>
         } @else {
         <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -52,16 +54,20 @@
           <path d="m12.5 12.5 4 4" />
         </svg><input type="search" (input)="search($event)" placeholder="Utilisateur, cible, IP..."
           class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-64" /></label>
-      
+
       <!-- Date Filter Input -->
-      <div class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-        <svg class="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <div
+        class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+        <svg class="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         <input type="date" [value]="dateFilter()" (change)="filterByDate($event)" title="Filtrer par date"
           class="cursor-pointer bg-transparent text-sm text-slate-700 outline-none" />
         @if (dateFilter()) {
-        <button type="button" (click)="clearDateFilter()" title="Toutes les dates" class="ml-0.5 text-slate-400 hover:text-slate-600">
+        <button type="button" (click)="clearDateFilter()" title="Toutes les dates"
+          class="ml-0.5 text-slate-400 hover:text-slate-600">
           <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -82,24 +88,10 @@
       </select>
       <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1">
 
-        <!-- Timeline -->
-        <button type="button" (click)="setViewMode('timeline')" [class]="viewMode() === 'timeline'
-      ? 'rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white'
-      : 'rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
 
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 5" />
-            <path d="M3 3v5h5" />
-            <path d="M12 7v5l4 2" />
-          </svg>
-        </button>
 
         <!-- Table -->
-        <button type="button" (click)="setViewMode('table')" [class]="viewMode() === 'table'
-      ? 'rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white'
-      : 'rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100'">
+        <button type="button" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">
 
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-3.5 w-3.5" fill="currentColor">
 
@@ -115,13 +107,14 @@
   @if (loading()) {
   <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
     <div class="mx-auto size-9 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
-    <p class="mt-4 text-sm text-slate-500">Chargement de l’historique…</p>
+    <p class="mt-4 text-sm text-slate-500">Chargement de l'historique…</p>
   </section>
   } @else if (filteredEntries().length === 0) {
   <section class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
     <p class="font-semibold text-slate-700">Aucune action trouvée</p>
     <p class="mt-1 text-sm text-slate-400">
-      {{ isTodaySelected() ? "Aucune action enregistrée aujourd’hui." : "Modifiez votre recherche ou vos filtres de date." }}
+      {{ isTodaySelected() ? "Aucune action enregistrée aujourd'hui." : "Modifiez votre recherche ou vos filtres de
+      date." }}
     </p>
     <div class="mt-4 flex items-center justify-center gap-3">
       @if (dateFilter()) {
@@ -133,14 +126,11 @@
       @if (!isTodaySelected()) {
       <button type="button" (click)="setTodayFilter()"
         class="rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">
-        Revenir à aujourd’hui
+        Revenir à aujourd'hui
       </button>
       }
     </div>
   </section>
-  } @else if (viewMode() === 'timeline') {
-  <section class="mt-6 max-w-5xl" aria-label="Chronologie des actions">@for (entry of filteredEntries(); track entry.id;
-    let last = $last) { <app-history-entry [entry]="entry" [last]="last" /> }</section>
   } @else {
   <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
@@ -155,8 +145,9 @@
             <th class="px-5 py-3">Détails</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">@for (entry of filteredEntries(); track entry.id) { <tr
-            class="align-top hover:bg-slate-50/70">
+        <tbody class="divide-y divide-slate-100">
+          @for (entry of filteredEntries(); track entry.id) {
+          <tr class="align-top hover:bg-slate-50/70">
             <td class="whitespace-nowrap px-5 py-4 text-xs text-slate-500">{{ entry.createdAt | date:'dd/MM/yyyy HH:mm'
               }}</td>
             <td class="px-5 py-4"><app-action-type-badge [action]="entry.action" /></td>
@@ -167,9 +158,13 @@
             <td class="px-5 py-4 font-medium text-slate-700">{{ entry.username }}</td>
             <td class="px-5 py-4 font-mono text-xs text-slate-600">{{ entry.ipAddress }}</td>
             <td class="max-w-sm px-5 py-4 text-slate-600">{{ entry.details }}</td>
-          </tr> }</tbody>
+          </tr>
+          }
+        </tbody>
       </table>
     </div>
   </section>
   }
+
+
 </div>

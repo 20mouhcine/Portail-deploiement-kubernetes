@@ -22,7 +22,6 @@ export class HistoryPage {
   protected readonly searchTerm = signal('');
   protected readonly actionFilter = signal<ActionType | 'ALL'>('ALL');
   protected readonly dateFilter = signal<string>(this.getTodayString());
-  protected readonly viewMode = signal<'timeline' | 'table'>('timeline');
 
   protected readonly changeCount = computed(() => this.filteredEntries().filter((entry) => ['CREATE', 'UPDATE', 'SCALE', 'RESTART'].includes(entry.action)).length);
   protected readonly securityCount = computed(() => this.filteredEntries().filter((entry) => entry.action === 'LOGIN' || entry.action === 'LOGOUT').length);
@@ -73,5 +72,4 @@ export class HistoryPage {
   protected filterByDate(event: Event): void { this.dateFilter.set((event.target as HTMLInputElement).value); }
   protected clearDateFilter(): void { this.dateFilter.set(''); }
   protected setTodayFilter(): void { this.dateFilter.set(this.getTodayString()); }
-  protected setViewMode(mode: 'timeline' | 'table'): void { this.viewMode.set(mode); }
 }
