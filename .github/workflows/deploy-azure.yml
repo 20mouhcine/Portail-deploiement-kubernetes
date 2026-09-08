@@ -31,20 +31,13 @@ jobs:
           key: ${{ secrets.AZURE_VM_SSH_KEY }}
           script: |
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-
+            
             # Upgrade or install the helm chart
-            sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml helm upgrade --install kubeportal /tmp/helm/kubeportal \
+            helm upgrade --install kubeportal /tmp/helm/kubeportal \
               --namespace kubeportal --create-namespace \
               --set frontend.image.tag=latest \
               --set backend.image.tag=latest
-
+            
             # Force a rollout restart to ensure the latest images are pulled from Docker Hub
-            sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
-            sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl rollout restart deployment kubeportal-backend -n kubeportal || true
-
-            # Kill existing port-forward process if running
-            sudo pkill -f "kubectl port-forward" || true
-
-            # Start port-forward in background
-            nohup sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl port-forward -n kubeportal service/kubeportal-frontend --address 0.0.0.0 8080:80 > /dev/null 2>&1 &
-
+            kubectl rollout restart deployment kubeportal-frontend -n kubeportal || true
+            kubectl rollout restart deployment kubeportal-backend -n kubeportal || true
