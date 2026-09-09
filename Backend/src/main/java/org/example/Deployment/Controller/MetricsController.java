@@ -42,10 +42,17 @@ public class MetricsController {
      */
     @GetMapping("/cluster")
     public ResponseEntity<ApiResponse<ClusterMetricsResponse>> getClusterMetrics() {
-        return ResponseEntity.ok(ApiResponse.success(
-                "Métriques du cluster récupérées avec succès",
-                metricsService.getClusterMetrics()
-        ));
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Métriques du cluster récupérées avec succès",
+                    metricsService.getClusterMetrics()
+            ));
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des métriques du cluster: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(ApiResponse.error(
+                    "Impossible de récupérer les métriques du cluster: " + e.getMessage()
+            ));
+        }
     }
 
     /**

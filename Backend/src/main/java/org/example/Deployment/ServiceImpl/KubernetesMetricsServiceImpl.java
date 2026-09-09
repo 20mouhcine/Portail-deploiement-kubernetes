@@ -27,16 +27,25 @@ public class KubernetesMetricsServiceImpl implements IKubernetesMetricsService {
 
     @Override
     public ClusterMetricsResponse getClusterMetrics() {
-        // Fetch node capacities
+        // Fetch node capacities safely
         Map<String, Node> nodeMap = kubernetesClient.nodes().list().getItems().stream()
+                .filter(node -> node.getMetadata() != null && node.getMetadata().getName() != null)
                 .collect(Collectors.toMap(
                         node -> node.getMetadata().getName(),
-                        node -> node
+                        node -> node,
+                        (existing, replacement) -> existing
                 ));
 
-        // Fetch current node metrics from Metrics Server
-        NodeMetricsList metricsResult = kubernetesClient.top().nodes().metrics();
-        List<NodeMetrics> nodeMetricsList = metricsResult.getItems();
+        // Fetch current node metrics from Metrics Server (with fallback if unavailable)
+        List<NodeMetrics> nodeMetricsList = new ArrayList<>();
+        try {
+            NodeMetricsList metricsResult = kubernetesClient.top().nodes().metrics();
+            if (metricsResult != null && metricsResult.getItems() != null) {
+                nodeMetricsList = metricsResult.getItems();
+            }
+        } catch (Exception e) {
+            log.warn("Unable to fetch Kubernetes node metrics from Metrics Server: {}", e.getMessage());
+        }
 
         long clusterTotalCpu = 0;
         long clusterUsedCpu = 0;
@@ -45,39 +54,63 @@ public class KubernetesMetricsServiceImpl implements IKubernetesMetricsService {
 
         List<ClusterMetricsResponse.NodeMetrics> nodeDetails = new ArrayList<>();
 
-        for (NodeMetrics nodeMetric : nodeMetricsList) {
-            String nodeName = nodeMetric.getMetadata().getName();
-            Node node = nodeMap.get(nodeName);
+        if (!nodeMetricsList.isEmpty()) {
+            for (NodeMetrics nodeMetric : nodeMetricsList) {
+                String nodeName = nodeMetric.getMetadata() != null ? nodeMetric.getMetadata().getName() : null;
+                if (nodeName == null) continue;
+                Node node = nodeMap.get(nodeName);
 
-            if (node == null) {
-                log.warn("Node {} found in metrics but not in node list, skipping", nodeName);
-                continue;
+                if (node == null) {
+                    log.warn("Node {} found in metrics but not in node list, skipping", nodeName);
+                    continue;
+                }
+
+                // Get capacity from the node
+                Map<String, Quantity> capacity = node.getStatus() != null ? node.getStatus().getCapacity() : null;
+                long totalCpuMillis = capacity != null ? toMilliCores(capacity.get("cpu")) : 0;
+                long totalMemMi = capacity != null ? toMebibytes(capacity.get("memory")) : 0;
+
+                // Get current usage from the metrics
+                Map<String, Quantity> usage = nodeMetric.getUsage();
+                long usedCpuMillis = usage != null ? toMilliCores(usage.get("cpu")) : 0;
+                long usedMemMi = usage != null ? toMebibytes(usage.get("memory")) : 0;
+
+                clusterTotalCpu += totalCpuMillis;
+                clusterUsedCpu += usedCpuMillis;
+                clusterTotalMemory += totalMemMi;
+                clusterUsedMemory += usedMemMi;
+
+                nodeDetails.add(ClusterMetricsResponse.NodeMetrics.builder()
+                        .name(nodeName)
+                        .totalCpuMillicores(totalCpuMillis)
+                        .usedCpuMillicores(usedCpuMillis)
+                        .cpuPercentage(percentage(usedCpuMillis, totalCpuMillis))
+                        .totalMemoryMi(totalMemMi)
+                        .usedMemoryMi(usedMemMi)
+                        .memoryPercentage(percentage(usedMemMi, totalMemMi))
+                        .build());
             }
+        } else {
+            // Fallback: Populate total node capacity even if Metrics Server fails to return live usage
+            for (Node node : nodeMap.values()) {
+                String nodeName = node.getMetadata().getName();
+                Map<String, Quantity> capacity = node.getStatus() != null ? node.getStatus().getCapacity() : null;
+                long totalCpuMillis = capacity != null ? toMilliCores(capacity.get("cpu")) : 0;
+                long totalMemMi = capacity != null ? toMebibytes(capacity.get("memory")) : 0;
 
-            // Get capacity from the node
-            Map<String, Quantity> capacity = node.getStatus().getCapacity();
-            long totalCpuMillis = toMilliCores(capacity.get("cpu"));
-            long totalMemMi = toMebibytes(capacity.get("memory"));
+                clusterTotalCpu += totalCpuMillis;
+                clusterTotalMemory += totalMemMi;
 
-            // Get current usage from the metrics
-            Map<String, Quantity> usage = nodeMetric.getUsage();
-            long usedCpuMillis = toMilliCores(usage.get("cpu"));
-            long usedMemMi = toMebibytes(usage.get("memory"));
-
-            clusterTotalCpu += totalCpuMillis;
-            clusterUsedCpu += usedCpuMillis;
-            clusterTotalMemory += totalMemMi;
-            clusterUsedMemory += usedMemMi;
-
-            nodeDetails.add(ClusterMetricsResponse.NodeMetrics.builder()
-                    .name(nodeName)
-                    .totalCpuMillicores(totalCpuMillis)
-                    .usedCpuMillicores(usedCpuMillis)
-                    .cpuPercentage(percentage(usedCpuMillis, totalCpuMillis))
-                    .totalMemoryMi(totalMemMi)
-                    .usedMemoryMi(usedMemMi)
-                    .memoryPercentage(percentage(usedMemMi, totalMemMi))
-                    .build());
+                nodeDetails.add(ClusterMetricsResponse.NodeMetrics.builder()
+                        .name(nodeName)
+                        .totalCpuMillicores(totalCpuMillis)
+                        .usedCpuMillicores(0)
+                        .cpuPercentage(0.0)
+                        .totalMemoryMi(totalMemMi)
+                        .usedMemoryMi(0)
+                        .memoryPercentage(0.0)
+                        .build());
+            }
         }
 
         return ClusterMetricsResponse.builder()
@@ -94,38 +127,13 @@ public class KubernetesMetricsServiceImpl implements IKubernetesMetricsService {
 
     /**
      * Converts a Kubernetes CPU Quantity to millicores.
-     * Handles cores ("2"), millicores ("500m"), microcores ("500000u"), and nanocores ("136621729n").
+     * Uses Fabric8's Quantity.getAmountInBytes() to handle all CPU formats safely (cores, millicores, microcores, nanocores).
      */
     private long toMilliCores(Quantity quantity) {
         if (quantity == null) return 0;
-        String strValue = quantity.getAmount();
-        String format = quantity.getFormat();
-
-        if (strValue == null || strValue.isEmpty()) return 0;
-
         try {
-            BigDecimal value = new BigDecimal(strValue);
-
-            if (format == null || format.isEmpty()) {
-                // Cores (e.g. "2" → 2000 millicores)
-                return value.multiply(BigDecimal.valueOf(1000)).longValue();
-            }
-
-            switch (format.toLowerCase()) {
-                case "m":
-                    // Millicores (e.g. "500m" → 500 millicores)
-                    return value.longValue();
-                case "u":
-                    // Microcores (e.g. "500000u" → 500 millicores)
-                    return value.divide(BigDecimal.valueOf(1_000), 0, java.math.RoundingMode.HALF_UP).longValue();
-                case "n":
-                    // Nanocores (e.g. "136621729n" → 136 millicores)
-                    return value.divide(BigDecimal.valueOf(1_000_000), 0, java.math.RoundingMode.HALF_UP).longValue();
-                default:
-                    // Fallback using getAmountInBytes
-                    BigDecimal cores = Quantity.getAmountInBytes(quantity);
-                    return cores.multiply(BigDecimal.valueOf(1000)).longValue();
-            }
+            BigDecimal cores = Quantity.getAmountInBytes(quantity);
+            return cores.multiply(BigDecimal.valueOf(1000)).longValue();
         } catch (Exception e) {
             log.error("Failed to parse CPU quantity: {}", quantity, e);
             return 0;
@@ -138,9 +146,13 @@ public class KubernetesMetricsServiceImpl implements IKubernetesMetricsService {
      */
     private long toMebibytes(Quantity quantity) {
         if (quantity == null) return 0;
-        BigDecimal bytes = Quantity.getAmountInBytes(quantity);
-        // Convert bytes to MiB
-        return bytes.divide(BigDecimal.valueOf(1024 * 1024), 0, java.math.RoundingMode.HALF_UP).longValue();
+        try {
+            BigDecimal bytes = Quantity.getAmountInBytes(quantity);
+            return bytes.divide(BigDecimal.valueOf(1024 * 1024), 0, java.math.RoundingMode.HALF_UP).longValue();
+        } catch (Exception e) {
+            log.error("Failed to parse memory quantity: {}", quantity, e);
+            return 0;
+        }
     }
 
     private double percentage(long used, long total) {
